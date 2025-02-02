@@ -1,0 +1,6 @@
+{
+  "addFilterSlots": 1000,
+  "enableAdvancedBehavior": true,
+  "item": "minecraft:command_block",
+  "slotLimit": 1
+}

@@ -34,27 +34,63 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.DataSlot;
+
 
 public class ItemAttachedIoMenu extends AttachedIoMenu<ItemAttachedIo> {
+
+    private int scrollOffset = 0;
+    private static final int SLOTS_PER_PAGE = 15; // 5x3 slot visibili per pagina
+    private static final int SLOTS_PER_ROW = 5;
 
     public ItemAttachedIoMenu(int syncId, Inventory playerInventory, PipeBlockEntity pipe, Direction side, ItemAttachedIo attachment) {
         super(MdMenus.ITEM_IO, syncId, playerInventory, pipe, side, attachment);
 
         // Config slots
+        updateFilterSlots();
+
+        // Sync data
+        addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return scrollOffset;
+            }
+
+            @Override
+            public void set(int value) {
+                scrollOffset = value;
+                updateFilterSlots();
+            }
+        });
+
+        syncShort(this::getMaxItemsExtracted, this::setMaxItemsExtracted);
+        syncShort(this::getMaxItemsInInventory, this::setMaxItemsInInventory);
+        syncEnum(RoutingMode.class, this::getRoutingMode, this::setRoutingMode);
+    }
+
+    private void updateFilterSlots() {
+        // Rimuovi solo gli slot del filtro, non tutti gli slot
+        slots.removeIf(slot -> slot instanceof ItemConfigSlot);
+        
         var row = 0;
         var col = 0;
-        for (int i = 0; i < Constants.Upgrades.MAX_FILTER; i++) {
+        for (int i = scrollOffset; i < Math.min(scrollOffset + SLOTS_PER_PAGE, Constants.Upgrades.MAX_FILTER); i++) {
             this.addSlot(new ItemConfigSlot(44 + col * 18, 20 + row * 18, attachment, i));
-            if (++col >= 5) {
+            if (++col >= SLOTS_PER_ROW) {
                 col = 0;
                 row++;
             }
         }
+    }
 
-        syncShort(this::getMaxItemsExtracted, this::setMaxItemsExtracted);
-        syncShort(this::getMaxItemsInInventory, this::setMaxItemsInInventory);
+    public void setScrollOffset(int offset) {
+        int maxOffset = Math.max(0, Constants.Upgrades.MAX_FILTER - SLOTS_PER_PAGE);
+        this.scrollOffset = Math.max(0, Math.min(offset, maxOffset));
+        updateFilterSlots();
+    }
 
-        syncEnum(RoutingMode.class, this::getRoutingMode, this::setRoutingMode);
+    public int getScrollOffset() {
+        return scrollOffset;
     }
 
     @Override
@@ -193,5 +229,11 @@ public class ItemAttachedIoMenu extends AttachedIoMenu<ItemAttachedIo> {
             MdPackets.sendSetFilter(containerId, configIdx, variant);
         }
         attachment.setFilter(configIdx, variant);
+    }
+
+    public int getMaxScroll() {
+        int totalSlots = Constants.Upgrades.MAX_FILTER;
+        int slotsPerPage = 15;
+        return Math.max(0, totalSlots - slotsPerPage);
     }
 }

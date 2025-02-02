@@ -35,6 +35,8 @@ import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.util.Mth;
+import dev.technici4n.moderndynamics.Constants;
 
 // TODO: need to sync item and item filter changes done by other players
 public class AttachedIoMenu<A extends AttachedIo> extends AbstractContainerMenu {
@@ -42,6 +44,9 @@ public class AttachedIoMenu<A extends AttachedIo> extends AbstractContainerMenu 
     public final Direction side;
     public final A attachment;
     protected final Player player;
+
+    protected static final int SLOTS_PER_PAGE = 8;
+    protected int scrollOffset = 0;
 
     public AttachedIoMenu(MenuType<?> menuType, int syncId, Inventory playerInventory, PipeBlockEntity pipe, Direction side, A attachment) {
         super(menuType, syncId);
@@ -223,5 +228,17 @@ public class AttachedIoMenu<A extends AttachedIo> extends AbstractContainerMenu 
 
     public boolean isAdvancedBehaviorAllowed() {
         return attachment.isAdvancedBehaviorAllowed();
+    }
+
+    public int getScrollOffset() {
+        return scrollOffset;
+    }
+
+    public void setScrollOffset(int offset) {
+        this.scrollOffset = Mth.clamp(offset, 0, getMaxScroll());
+    }
+
+    public int getMaxScroll() {
+        return Math.max(0, Constants.Upgrades.MAX_FILTER - SLOTS_PER_PAGE);
     }
 }

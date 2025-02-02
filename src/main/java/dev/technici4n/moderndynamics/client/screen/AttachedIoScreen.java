@@ -73,6 +73,20 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
     private final RedstoneModeButton redstoneModeHigh;
     private final List<RedstoneModeButton> redstoneButtons;
 
+    protected static final int SCROLLBAR_X = 135;
+    protected static final int SCROLLBAR_Y = 20;
+    protected static final int SCROLLBAR_WIDTH = 8;
+    protected static final int SCROLLBAR_HEIGHT = 34;
+    protected static final int HANDLE_HEIGHT = 8;
+    
+    protected static final int SCROLLBAR_UV_X = 0;
+    protected static final int SCROLLBAR_UV_Y = 0;
+    protected static final int HANDLE_UV_X = 8;
+    protected static final int HANDLE_UV_Y = 0;
+    
+    protected static final ResourceLocation SCROLLBAR_TEXTURE = MdId.of("textures/gui/scrollbar.png");
+    protected boolean isScrolling = false;
+
     public AttachedIoScreen(T abstractContainerMenu, Inventory inventory, Component component) {
         super(abstractContainerMenu, inventory, component);
 
@@ -125,6 +139,9 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
         super.render(guiGraphics, mouseX, mouseY, partialTick);
+        
+        // Renderizziamo la scrollbar qui, dopo che tutto il resto è stato renderizzato
+        renderScrollbar(guiGraphics);
     }
 
     @Override
@@ -163,8 +180,8 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
     }
 
     @Override
-    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        renderRedstoneTabBg(guiGraphics, partialTick);
+    protected void renderBg(GuiGraphics guiGraphics, float delta, int mouseX, int mouseY) {
+        renderRedstoneTabBg(guiGraphics, delta);
 
         // Background
         guiGraphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight);
@@ -422,5 +439,73 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
 
     public int getTopPos() {
         return topPos;
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (isInScrollBar(mouseX, mouseY)) {
+            isScrolling = true;
+            handleScrolling(mouseY);
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (isScrolling) {
+            isScrolling = false;
+            return true;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (isScrolling) {
+            handleScrolling(mouseY);
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (verticalAmount != 0) {
+            int currentScroll = menu.getScrollOffset();
+            menu.setScrollOffset(currentScroll - (int)Math.signum(verticalAmount));
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+    }
+
+    private boolean isInScrollBar(double mouseX, double mouseY) {
+        return mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH 
+            && mouseY >= topPos + SCROLLBAR_Y && mouseY < topPos + SCROLLBAR_Y + SCROLLBAR_HEIGHT;
+    }
+
+    private void handleScrolling(double mouseY) {
+        float percent = ((float) (mouseY - (topPos + SCROLLBAR_Y)) / SCROLLBAR_HEIGHT);
+        percent = Mth.clamp(percent, 0.0F, 1.0F);
+        menu.setScrollOffset((int) (percent * menu.getMaxScroll()));
+    }
+
+    private void renderScrollbar(GuiGraphics guiGraphics) {
+        // Render scrollbar background (8x34 pixels)
+        guiGraphics.blit(SCROLLBAR_TEXTURE, 
+            leftPos + SCROLLBAR_X, topPos + SCROLLBAR_Y,
+            SCROLLBAR_UV_X, SCROLLBAR_UV_Y,
+            SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT,
+            64, 64);
+        
+        float scrollPercent = menu.getMaxScroll() > 0 ? (float) menu.getScrollOffset() / menu.getMaxScroll() : 0;
+        int handleY = topPos + SCROLLBAR_Y + (int) (scrollPercent * (SCROLLBAR_HEIGHT - HANDLE_HEIGHT));
+        
+        // Render handle (8x8 pixels)
+        guiGraphics.blit(SCROLLBAR_TEXTURE, 
+            leftPos + SCROLLBAR_X, handleY,
+            HANDLE_UV_X, HANDLE_UV_Y,
+            SCROLLBAR_WIDTH, HANDLE_HEIGHT,
+            64, 64);
     }
 }

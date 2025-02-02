@@ -29,6 +29,9 @@ import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.util.Mth;
+import net.minecraft.resources.ResourceLocation;
+import dev.technici4n.moderndynamics.util.MdId;
 
 public class ItemAttachedIoScreen extends AttachedIoScreen<ItemAttachedIoMenu> {
     @Nullable
@@ -153,48 +156,7 @@ public class ItemAttachedIoScreen extends AttachedIoScreen<ItemAttachedIoMenu> {
             guiGraphics.renderTooltip(font, Component.translatable("gui.moderndynamics.setting.max_items_in_inventory.tooltip"), mouseX, mouseY);
         } else if (maxItemsExtractedTooltipRect != null && maxItemsExtractedTooltipRect.contains(Math.round(mouseX), Math.round(mouseY))) {
             guiGraphics.renderTooltip(font, Component.translatable("gui.moderndynamics.setting.max_items_extracted.tooltip"), mouseX, mouseY);
-        } else {
-            this.renderTooltip(guiGraphics, mouseX, mouseY);
         }
-    }
-
-    @Override
-    protected void renderBg(GuiGraphics guiGraphics, float delta, int mouseX, int mouseY) {
-        super.renderBg(guiGraphics, delta, mouseX, mouseY);
-
-        // Render current settings for max total items
-        if (menu.isSettingSupported(Setting.MAX_ITEMS_IN_INVENTORY)) {
-            renderMaxItemsInInventoryValue(guiGraphics);
-        }
-
-        // Render current settings for max extraction amount
-        if (menu.isSettingSupported(Setting.MAX_ITEMS_EXTRACTED)) {
-            renderMaxItemsExtractedValue(guiGraphics);
-        }
-    }
-
-    private void renderMaxItemsInInventoryValue(GuiGraphics guiGraphics) {
-        var text = getMaxItemsInInventoryText();
-        var width = font.width(text);
-        var rect = new Rect2i(
-                leftPos + 152 - width / 2,
-                topPos + 18,
-                width,
-                font.lineHeight);
-        guiGraphics.drawString(font, text, rect.getX(), rect.getY(), 0x404040, false);
-        maxItemsInInventoryTooltipRect = rect;
-    }
-
-    private void renderMaxItemsExtractedValue(GuiGraphics guiGraphics) {
-        var text = String.valueOf(menu.getMaxItemsExtracted());
-        var width = font.width(text);
-        var rect = new Rect2i(
-                leftPos + 152 - width / 2,
-                topPos + 46,
-                width,
-                font.lineHeight);
-        guiGraphics.drawString(font, text, rect.getX(), rect.getY(), 0x404040, false);
-        maxItemsExtractedTooltipRect = rect;
     }
 
     private Component getMaxItemsInInventoryText() {
@@ -204,5 +166,4 @@ public class ItemAttachedIoScreen extends AttachedIoScreen<ItemAttachedIoMenu> {
             return Component.literal(String.valueOf(menu.getMaxItemsInInventory()));
         }
     }
-
 }

@@ -32,6 +32,6 @@ public class Constants {
     }
 
     public static class Upgrades {
-        public static final int MAX_FILTER = 15;
+        public static final int MAX_FILTER = 1000;
     }
 }
