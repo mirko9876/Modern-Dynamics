@@ -139,9 +139,7 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
         super.render(guiGraphics, mouseX, mouseY, partialTick);
-        
-        // Renderizziamo la scrollbar qui, dopo che tutto il resto è stato renderizzato
-        renderScrollbar(guiGraphics);
+        this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
 
     @Override
@@ -182,8 +180,6 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float delta, int mouseX, int mouseY) {
         renderRedstoneTabBg(guiGraphics, delta);
-
-        // Background
         guiGraphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight);
 
         // Upgrade panel background
@@ -210,6 +206,9 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
                 }
             }
         }
+
+        // Render scrollbar last
+        renderScrollbar(guiGraphics);
     }
 
     private void renderRedstoneTabBg(GuiGraphics guiGraphics, float partialTicks) {
@@ -496,7 +495,7 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
             leftPos + SCROLLBAR_X, topPos + SCROLLBAR_Y,
             SCROLLBAR_UV_X, SCROLLBAR_UV_Y,
             SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT,
-            64, 64);
+            16, 34);
         
         float scrollPercent = menu.getMaxScroll() > 0 ? (float) menu.getScrollOffset() / menu.getMaxScroll() : 0;
         int handleY = topPos + SCROLLBAR_Y + (int) (scrollPercent * (SCROLLBAR_HEIGHT - HANDLE_HEIGHT));
@@ -506,6 +505,6 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
             leftPos + SCROLLBAR_X, handleY,
             HANDLE_UV_X, HANDLE_UV_Y,
             SCROLLBAR_WIDTH, HANDLE_HEIGHT,
-            64, 64);
+            16, 34);
     }
 }
