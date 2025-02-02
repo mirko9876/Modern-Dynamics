@@ -28,30 +28,67 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.DataSlot;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidUtil;
 
 public class FluidAttachedIoMenu extends AttachedIoMenu<FluidAttachedIo> {
+    private int scrollOffset = 0;
+    private static final int SLOTS_PER_PAGE = 15;
+    private static final int SLOTS_PER_ROW = 5;
 
     public FluidAttachedIoMenu(int syncId, Inventory playerInventory, PipeBlockEntity pipe, Direction side, FluidAttachedIo attachment) {
         super(MdMenus.FLUID_IO, syncId, playerInventory, pipe, side, attachment);
 
         // Config slots
+        updateFilterSlots();
+
+        // Sync scroll position
+        addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return scrollOffset;
+            }
+
+            @Override
+            public void set(int value) {
+                scrollOffset = value;
+                updateFilterSlots();
+            }
+        });
+    }
+
+    private void updateFilterSlots() {
+        slots.removeIf(slot -> slot instanceof FluidConfigSlot);
+        
         var row = 0;
         var col = 0;
-        for (int i = 0; i < Constants.Upgrades.MAX_FILTER; i++) {
+        for (int i = scrollOffset; i < Math.min(scrollOffset + SLOTS_PER_PAGE, Constants.Upgrades.MAX_FILTER); i++) {
             this.addSlot(new FluidConfigSlot(44 + col * 18, 20 + row * 18, attachment, i));
-            if (++col >= 5) {
+            if (++col >= SLOTS_PER_ROW) {
                 col = 0;
                 row++;
             }
         }
     }
 
+    public void setScrollOffset(int offset) {
+        int maxOffset = Math.max(0, Constants.Upgrades.MAX_FILTER - SLOTS_PER_PAGE);
+        this.scrollOffset = Math.max(0, Math.min(offset, maxOffset));
+        updateFilterSlots();
+    }
+
+    public int getScrollOffset() {
+        return scrollOffset;
+    }
+
+    public int getMaxScroll() {
+        return Math.max(0, Constants.Upgrades.MAX_FILTER - SLOTS_PER_PAGE);
+    }
+
     @Override
     public void clicked(int slotIndex, int button, ClickType actionType, Player player) {
         if (slotIndex >= 0 && getSlot(slotIndex) instanceof FluidConfigSlot configSlot && configSlot.isActive()) {
-
             var contained = FluidUtil.getFluidContained(getCarried()).orElse(FluidStack.EMPTY);
             attachment.setFilter(configSlot.getConfigIdx(), FluidVariant.of(contained));
         } else {
