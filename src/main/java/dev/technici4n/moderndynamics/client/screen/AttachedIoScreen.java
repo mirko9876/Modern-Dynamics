@@ -444,7 +444,16 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (isInScrollBar(mouseX, mouseY)) {
             isScrolling = true;
-            handleScrolling(mouseY);
+            // Calculate initial scroll position based on click location
+            if (menu.getMaxScroll() > 0) {
+                double relativeY = mouseY - (topPos + SCROLLBAR_Y);
+                double scrollHeight = SCROLLBAR_HEIGHT - HANDLE_HEIGHT;
+                double scrollProgress = Mth.clamp(relativeY / scrollHeight, 0.0, 1.0);
+                int scrollOffset = (int)(scrollProgress * menu.getMaxScroll());
+                // Round to nearest multiple of 5
+                scrollOffset = (scrollOffset / 5) * 5;
+                menu.setScrollOffset(scrollOffset);
+            }
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -462,7 +471,16 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (isScrolling) {
-            handleScrolling(mouseY);
+            // Calculate scroll position during drag
+            if (menu.getMaxScroll() > 0) {
+                double relativeY = mouseY - (topPos + SCROLLBAR_Y);
+                double scrollHeight = SCROLLBAR_HEIGHT - HANDLE_HEIGHT;
+                double scrollProgress = Mth.clamp(relativeY / scrollHeight, 0.0, 1.0);
+                int scrollOffset = (int)(scrollProgress * menu.getMaxScroll());
+                // Round to nearest multiple of 5
+                scrollOffset = (scrollOffset / 5) * 5;
+                menu.setScrollOffset(scrollOffset);
+            }
             return true;
         }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
@@ -472,21 +490,17 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (verticalAmount != 0) {
             int currentScroll = menu.getScrollOffset();
-            menu.setScrollOffset(currentScroll - (int) Math.signum(verticalAmount));
+            // Scroll 5 slots at a time for better UX
+            menu.setScrollOffset(currentScroll - (int) Math.signum(verticalAmount) * 5);
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
     private boolean isInScrollBar(double mouseX, double mouseY) {
-        return mouseX >= leftPos + SCROLLBAR_X && mouseX < leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH
-                && mouseY >= topPos + SCROLLBAR_Y && mouseY < topPos + SCROLLBAR_Y + SCROLLBAR_HEIGHT;
-    }
-
-    private void handleScrolling(double mouseY) {
-        float percent = ((float) (mouseY - (topPos + SCROLLBAR_Y)) / SCROLLBAR_HEIGHT);
-        percent = Mth.clamp(percent, 0.0F, 1.0F);
-        menu.setScrollOffset((int) (percent * menu.getMaxScroll()));
+        int i = leftPos + SCROLLBAR_X;
+        int j = topPos + SCROLLBAR_Y;
+        return mouseX >= i && mouseY >= j && mouseX < i + SCROLLBAR_WIDTH && mouseY < j + SCROLLBAR_HEIGHT;
     }
 
     private void renderScrollbar(GuiGraphics guiGraphics) {
