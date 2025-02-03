@@ -79,7 +79,6 @@ public class ModernDynamics {
         LOGGER.info("Successfully loaded Modern Dynamics!");
     }
 
-
     private void register(RegisterEvent registerEvent) {
         var registryKey = registerEvent.getRegistryKey();
         if (registryKey == Registries.BLOCK) {
