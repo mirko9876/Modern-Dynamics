@@ -1,4 +1,8 @@
-.\gradlew.bat  build :spotlessApply
+.\gradlew.bat  build :spotlessApply 
+
+
+
+
 .\gradlew.bat  build 
 
 # Modern Dynamics (MD)
