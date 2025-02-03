@@ -1,9 +1,3 @@
-.\gradlew.bat  build :spotlessApply 
-
-
-
-
-.\gradlew.bat  build 
 
 # Modern Dynamics (MD)
 Modern item and fluid transport for Neoforge, inspired by Thermal Dynamics.
