@@ -1,0 +1,6 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "moderndynamics:item/entry_filter_definition_modid"
+  }
+} 

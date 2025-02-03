@@ -25,6 +25,7 @@ import dev.technici4n.moderndynamics.gui.menu.FluidAttachedIoMenu;
 import dev.technici4n.moderndynamics.gui.menu.ItemAttachedIoMenu;
 import net.minecraft.world.inventory.MenuType;
 
+
 public class MdMenus {
     public static final MenuType<ItemAttachedIoMenu> ITEM_IO = AttachmentMenuType.create("item_io", ItemAttachedIo::new,
             ItemAttachedIoMenu::new);
@@ -32,6 +33,6 @@ public class MdMenus {
             FluidAttachedIo::new, FluidAttachedIoMenu::new);
 
     public static void init() {
-        // init static
+        // Initialize menus here
     }
 }

@@ -25,10 +25,14 @@ import dev.technici4n.moderndynamics.attachment.IoAttachmentType;
 import dev.technici4n.moderndynamics.debug.DebugToolItem;
 import dev.technici4n.moderndynamics.pipe.PipeItem;
 import dev.technici4n.moderndynamics.util.MdId;
+import dev.technici4n.moderndynamics.item.EntryFilterDefinitionItem;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.client.renderer.item.ItemProperties;
+import dev.technici4n.moderndynamics.ModernDynamics;
+
 
 public class MdItems {
     public static final PipeItem ITEM_PIPE = new PipeItem(MdBlocks.ITEM_PIPE);
@@ -73,6 +77,8 @@ public class MdItems {
 
     public static final Item WRENCH = new Item(new Item.Properties().stacksTo(1));
     public static final DebugToolItem DEBUG_TOOL = new DebugToolItem();
+
+    public static final EntryFilterDefinitionItem ENTRY_FILTER_DEFINITION = new EntryFilterDefinitionItem();
 
     public static final PipeItem[] ALL_PIPES = new PipeItem[] {
             ITEM_PIPE,
@@ -127,5 +133,27 @@ public class MdItems {
 
         Registry.register(BuiltInRegistries.ITEM, MdId.of("wrench"), WRENCH);
         Registry.register(BuiltInRegistries.ITEM, MdId.of("debug_tool"), DEBUG_TOOL);
+
+        Registry.register(BuiltInRegistries.ITEM, MdId.of("entry_filter_definition"), ENTRY_FILTER_DEFINITION);
+    }
+
+    public static void initClient() {
+        ModernDynamics.LOGGER.info("Registering item properties...");
+
+        ItemProperties.register(ENTRY_FILTER_DEFINITION, MdId.of("modid"),
+                (stack, level, entity, seed) -> {
+                    String displayName = stack.getHoverName().getString();
+                    boolean result = !displayName.isEmpty() && displayName.charAt(0) == '@';
+                    ModernDynamics.LOGGER.debug("Modid predicate: {} -> {}", displayName, result);
+                    return result ? 1.0F : 0.0F;
+                });
+
+        ItemProperties.register(ENTRY_FILTER_DEFINITION, MdId.of("tag"),
+                (stack, level, entity, seed) -> {
+                    String displayName = stack.getHoverName().getString();
+                    boolean result = !displayName.isEmpty() && displayName.charAt(0) == '#';
+                    ModernDynamics.LOGGER.debug("Tag predicate: {} -> {}", displayName, result);
+                    return result ? 1.0F : 0.0F;
+                });
     }
 }

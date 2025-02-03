@@ -70,5 +70,9 @@
     "item.moderndynamics.filter": "Filter",
     "item.moderndynamics.inhibitor": "Inhibitor",
     "item.moderndynamics.wrench": "Wrench",
-    "itemGroup.moderndynamics.moderndynamics": "Modern Dynamics"
+    "itemGroup.moderndynamics.moderndynamics": "Modern Dynamics",
+
+
+    
+    "item.moderndynamics.entry_filter_definition": "Entry Filter Definition"
 }

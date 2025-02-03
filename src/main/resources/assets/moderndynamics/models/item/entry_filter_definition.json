@@ -1,0 +1,20 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "moderndynamics:item/entry_filter_definition_default"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "moderndynamics:modid": 1.0
+      },
+      "model": "moderndynamics:item/entry_filter_definition_modid"
+    },
+    {
+      "predicate": {
+        "moderndynamics:tag": 1.0
+      },
+      "model": "moderndynamics:item/entry_filter_definition_tag"
+    }
+  ]
+} 

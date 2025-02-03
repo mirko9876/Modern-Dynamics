@@ -43,6 +43,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 
 @Mod(MdId.MOD_ID)
 public class ModernDynamics {
@@ -67,8 +68,17 @@ public class ModernDynamics {
         if (FMLLoader.getDist().isClient()) {
             new ModernDynamicsClient(modEvents);
         }
+
+        if (FMLLoader.getDist().isClient()) {
+            modEvents.addListener(FMLClientSetupEvent.class, event -> {
+                new ModernDynamicsClient(modEvents);
+                MdItems.initClient();
+            });
+        }
+
         LOGGER.info("Successfully loaded Modern Dynamics!");
     }
+
 
     private void register(RegisterEvent registerEvent) {
         var registryKey = registerEvent.getRegistryKey();
