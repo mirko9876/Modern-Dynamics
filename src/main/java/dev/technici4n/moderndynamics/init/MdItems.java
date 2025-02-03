@@ -142,7 +142,10 @@ public class MdItems {
 
         ItemProperties.register(ENTRY_FILTER_DEFINITION, MdId.of("modid"),
                 (stack, level, entity, seed) -> {
-                    String displayName = stack.getHoverName().getString();
+                    String displayName = stack.getHoverName().getString()
+                        .trim()
+                        .replace("'", "")
+                        .replace("\"", "");
                     boolean result = !displayName.isEmpty() && displayName.charAt(0) == '@';
                     ModernDynamics.LOGGER.debug("Modid predicate: {} -> {}", displayName, result);
                     return result ? 1.0F : 0.0F;
@@ -150,7 +153,10 @@ public class MdItems {
 
         ItemProperties.register(ENTRY_FILTER_DEFINITION, MdId.of("tag"),
                 (stack, level, entity, seed) -> {
-                    String displayName = stack.getHoverName().getString();
+                    String displayName = stack.getHoverName().getString()
+                        .trim()
+                        .replace("'", "")
+                        .replace("\"", "");
                     boolean result = !displayName.isEmpty() && displayName.charAt(0) == '#';
                     ModernDynamics.LOGGER.debug("Tag predicate: {} -> {}", displayName, result);
                     return result ? 1.0F : 0.0F;

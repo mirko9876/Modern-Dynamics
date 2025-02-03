@@ -172,4 +172,29 @@ public class ItemAttachedIoScreen extends AttachedIoScreen<ItemAttachedIoMenu> {
             return Component.literal(String.valueOf(menu.getMaxItemsInInventory()));
         }
     }
+
+    @Override
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        if (decMaxItemsInInventory != null && incMaxItemsInInventory != null) {
+            decMaxItemsInInventory.active = menu.getMaxItemsInInventory() > 0;
+            incMaxItemsInInventory.active = menu.getMaxItemsInInventory() < Integer.MAX_VALUE;
+        }
+        if (decMaxItemsExtracted != null && incMaxItemsExtracted != null) {
+            decMaxItemsExtracted.active = menu.getMaxItemsExtracted() > 1;
+            incMaxItemsExtracted.active = menu.getMaxItemsExtracted() < menu.getMaxItemsExtractedMaximum();
+        }
+        if (filterNbtModeButton != null) {
+            filterNbtModeButton.active = menu.isAdvancedBehaviorAllowed();
+        }
+        if (routingModeButton != null) {
+            routingModeButton.active = menu.isAdvancedBehaviorAllowed();
+            routingModeButton.setValue(menu.getRoutingMode());
+        }
+        if (oversendingModeButton != null) {
+            oversendingModeButton.active = menu.isAdvancedBehaviorAllowed();
+            oversendingModeButton.setValue(menu.getOversendingMode());
+        }
+
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
+    }
 }

@@ -33,6 +33,10 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.Item;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.resources.ResourceLocation;
+import dev.technici4n.moderndynamics.item.EntryFilterDefinitionItem;
+import net.minecraft.tags.TagKey;
+import net.minecraft.core.registries.Registries;
 
 public final class ItemCachedFilter {
     private final Set<ItemVariant> listedVariants;
@@ -81,15 +85,51 @@ public final class ItemCachedFilter {
                 itemIsListed = true;
             }
         } else {
-            if (filterNbt == FilterNbtMode.RESPECT_NBT) {
-                itemIsListed = listedVariants.contains(variant);
-            } else {
-                itemIsListed = listedItems.contains(variant.getItem());
+            // Check if any of our filter items match this variant
+            for (ItemVariant filterVariant : listedVariants) {
+                // Check if it's an EntryFilterDefinitionItem
+                if (filterVariant.getItem() instanceof EntryFilterDefinitionItem) {
+                    String displayName = filterVariant.toStack().getHoverName().getString()
+                        .trim()
+                        .replace("'", "")
+                        .replace("\"", "");
+                    
+                    // Check for tag filter (#tag)
+                    if (displayName.startsWith("#")) {
+                        String tagName = displayName.substring(1);
+                        var tagLocation = ResourceLocation.tryParse(tagName);
+                        if (tagLocation != null) {
+                            var tagKey = TagKey.create(Registries.ITEM, tagLocation);
+                            var registry = BuiltInRegistries.ITEM;
+                            
+                            for (var holder : registry.getTagOrEmpty(tagKey)) {
+                                if (holder.value() == variant.getItem()) {
+                                    itemIsListed = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    // Check for mod ID filter (@modid)
+                    else if (displayName.startsWith("@")) {
+                        String modId = displayName.substring(1);
+                        if (modId.equals(getModId(variant))) {
+                            itemIsListed = true;
+                            break;
+                        }
+                    }
+                } else {
+                    // Normal item matching
+                    if (filterNbt == FilterNbtMode.RESPECT_NBT) {
+                        itemIsListed = listedVariants.contains(variant);
+                    } else {
+                        itemIsListed = listedItems.contains(variant.getItem());
+                    }
+                }
             }
-
-            // Possibly handle matching damage too
         }
 
+        //implemented upper
         // The "ore dictionary" search could treat an otherwise unlisted item as listed based on its tags
         if (!itemIsListed) {
 
