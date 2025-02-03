@@ -29,9 +29,6 @@ import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import org.jetbrains.annotations.Nullable;
-import net.minecraft.util.Mth;
-import net.minecraft.resources.ResourceLocation;
-import dev.technici4n.moderndynamics.util.MdId;
 
 public class ItemAttachedIoScreen extends AttachedIoScreen<ItemAttachedIoMenu> {
     @Nullable

@@ -18,6 +18,7 @@
  */
 package dev.technici4n.moderndynamics.gui.menu;
 
+import dev.technici4n.moderndynamics.Constants;
 import dev.technici4n.moderndynamics.attachment.Setting;
 import dev.technici4n.moderndynamics.attachment.attached.AttachedIo;
 import dev.technici4n.moderndynamics.attachment.settings.FilterInversionMode;
@@ -28,6 +29,7 @@ import java.util.function.BiConsumer;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -35,8 +37,6 @@ import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.util.Mth;
-import dev.technici4n.moderndynamics.Constants;
 
 // TODO: need to sync item and item filter changes done by other players
 public class AttachedIoMenu<A extends AttachedIo> extends AbstractContainerMenu {

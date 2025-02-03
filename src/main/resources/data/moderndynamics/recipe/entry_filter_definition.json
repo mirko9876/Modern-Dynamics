@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "ingredients": [
+        {
+            "item": "minecraft:book"
+        },
+        {
+            "tag": "c:gems/lapis"
+        },
+		{
+			"tag": "c:nuggets/gold"
+		}
+    ],
+    "result": {
+        "id": "moderndynamics:entry_filter_definition",
+        "count": 1
+	}
+}

@@ -36,7 +36,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.DataSlot;
 
-
 public class ItemAttachedIoMenu extends AttachedIoMenu<ItemAttachedIo> {
 
     private int scrollOffset = 0;
@@ -71,7 +70,7 @@ public class ItemAttachedIoMenu extends AttachedIoMenu<ItemAttachedIo> {
     private void updateFilterSlots() {
         // Rimuovi solo gli slot del filtro, non tutti gli slot
         slots.removeIf(slot -> slot instanceof ItemConfigSlot);
-        
+
         var row = 0;
         var col = 0;
         for (int i = scrollOffset; i < Math.min(scrollOffset + SLOTS_PER_PAGE, Constants.Upgrades.MAX_FILTER); i++) {

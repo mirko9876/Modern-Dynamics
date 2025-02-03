@@ -22,6 +22,7 @@ import dev.technici4n.moderndynamics.attachment.settings.FilterDamageMode;
 import dev.technici4n.moderndynamics.attachment.settings.FilterInversionMode;
 import dev.technici4n.moderndynamics.attachment.settings.FilterModMode;
 import dev.technici4n.moderndynamics.attachment.settings.FilterNbtMode;
+import dev.technici4n.moderndynamics.item.EntryFilterDefinitionItem;
 import dev.technici4n.moderndynamics.util.FluidVariant;
 import dev.technici4n.moderndynamics.util.ItemVariant;
 import java.util.Collections;
@@ -30,13 +31,12 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import org.jetbrains.annotations.Nullable;
-import net.minecraft.resources.ResourceLocation;
-import dev.technici4n.moderndynamics.item.EntryFilterDefinitionItem;
-import net.minecraft.tags.TagKey;
-import net.minecraft.core.registries.Registries;
 
 public final class ItemCachedFilter {
     private final Set<ItemVariant> listedVariants;
@@ -90,10 +90,10 @@ public final class ItemCachedFilter {
                 // Check if it's an EntryFilterDefinitionItem
                 if (filterVariant.getItem() instanceof EntryFilterDefinitionItem) {
                     String displayName = filterVariant.toStack().getHoverName().getString()
-                        .trim()
-                        .replace("'", "")
-                        .replace("\"", "");
-                    
+                            .trim()
+                            .replace("'", "")
+                            .replace("\"", "");
+
                     // Check for tag filter (#tag)
                     if (displayName.startsWith("#")) {
                         String tagName = displayName.substring(1);
@@ -101,7 +101,7 @@ public final class ItemCachedFilter {
                         if (tagLocation != null) {
                             var tagKey = TagKey.create(Registries.ITEM, tagLocation);
                             var registry = BuiltInRegistries.ITEM;
-                            
+
                             for (var holder : registry.getTagOrEmpty(tagKey)) {
                                 if (holder.value() == variant.getItem()) {
                                     itemIsListed = true;
@@ -129,7 +129,7 @@ public final class ItemCachedFilter {
             }
         }
 
-        //implemented upper
+        // implemented upper
         // The "ore dictionary" search could treat an otherwise unlisted item as listed based on its tags
         if (!itemIsListed) {
 

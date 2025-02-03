@@ -60,7 +60,7 @@ public class FluidAttachedIoMenu extends AttachedIoMenu<FluidAttachedIo> {
 
     private void updateFilterSlots() {
         slots.removeIf(slot -> slot instanceof FluidConfigSlot);
-        
+
         var row = 0;
         var col = 0;
         for (int i = scrollOffset; i < Math.min(scrollOffset + SLOTS_PER_PAGE, Constants.Upgrades.MAX_FILTER); i++) {

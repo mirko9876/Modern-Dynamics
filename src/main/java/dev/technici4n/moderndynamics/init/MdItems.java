@@ -18,21 +18,20 @@
  */
 package dev.technici4n.moderndynamics.init;
 
+import dev.technici4n.moderndynamics.ModernDynamics;
 import dev.technici4n.moderndynamics.attachment.AttachmentItem;
 import dev.technici4n.moderndynamics.attachment.InhibitorAttachmentItem;
 import dev.technici4n.moderndynamics.attachment.IoAttachmentItem;
 import dev.technici4n.moderndynamics.attachment.IoAttachmentType;
 import dev.technici4n.moderndynamics.debug.DebugToolItem;
+import dev.technici4n.moderndynamics.item.EntryFilterDefinitionItem;
 import dev.technici4n.moderndynamics.pipe.PipeItem;
 import dev.technici4n.moderndynamics.util.MdId;
-import dev.technici4n.moderndynamics.item.EntryFilterDefinitionItem;
+import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
-import net.minecraft.client.renderer.item.ItemProperties;
-import dev.technici4n.moderndynamics.ModernDynamics;
-
 
 public class MdItems {
     public static final PipeItem ITEM_PIPE = new PipeItem(MdBlocks.ITEM_PIPE);
@@ -143,9 +142,9 @@ public class MdItems {
         ItemProperties.register(ENTRY_FILTER_DEFINITION, MdId.of("modid"),
                 (stack, level, entity, seed) -> {
                     String displayName = stack.getHoverName().getString()
-                        .trim()
-                        .replace("'", "")
-                        .replace("\"", "");
+                            .trim()
+                            .replace("'", "")
+                            .replace("\"", "");
                     boolean result = !displayName.isEmpty() && displayName.charAt(0) == '@';
                     ModernDynamics.LOGGER.debug("Modid predicate: {} -> {}", displayName, result);
                     return result ? 1.0F : 0.0F;
@@ -154,9 +153,9 @@ public class MdItems {
         ItemProperties.register(ENTRY_FILTER_DEFINITION, MdId.of("tag"),
                 (stack, level, entity, seed) -> {
                     String displayName = stack.getHoverName().getString()
-                        .trim()
-                        .replace("'", "")
-                        .replace("\"", "");
+                            .trim()
+                            .replace("'", "")
+                            .replace("\"", "");
                     boolean result = !displayName.isEmpty() && displayName.charAt(0) == '#';
                     ModernDynamics.LOGGER.debug("Tag predicate: {} -> {}", displayName, result);
                     return result ? 1.0F : 0.0F;
