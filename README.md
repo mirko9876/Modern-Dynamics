@@ -30,3 +30,4 @@ Lesser General Public License v3.
 [© 2012-2017 Cult of the Full Hub / Team CoFH / CoFH](https://github.com/CoFH/ThermalDynamics)
 
 Art and sound assets are released under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International ([CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/))
+
