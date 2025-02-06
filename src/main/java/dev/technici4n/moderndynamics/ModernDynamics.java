@@ -33,6 +33,7 @@ import dev.technici4n.moderndynamics.util.MdId;
 import dev.technici4n.moderndynamics.util.MdItemGroup;
 import dev.technici4n.moderndynamics.util.WrenchHelper;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.inventory.MenuType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -42,6 +43,7 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
+import net.neoforged.neoforge.registries.DeferredRegister;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,6 +54,7 @@ public class ModernDynamics {
     public ModernDynamics(IEventBus modEvents) {
         modEvents.addListener(RegisterEvent.class, this::register);
         modEvents.addListener(RegisterPayloadHandlersEvent.class, this::registerPayloadHandlers);
+
 
         modEvents.addListener(MdBlockEntities::registerCapabilities);
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent.class, e -> {
@@ -75,6 +78,7 @@ public class ModernDynamics {
                 MdItems.initClient();
             });
         }
+
 
         LOGGER.info("Successfully loaded Modern Dynamics!");
     }

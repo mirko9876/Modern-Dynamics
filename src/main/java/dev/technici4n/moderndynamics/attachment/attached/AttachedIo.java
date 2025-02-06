@@ -203,4 +203,28 @@ public abstract class AttachedIo extends AttachedAttachment {
             filterInversion = FilterInversionMode.WHITELIST;
         }
     }
+
+    public String getAttachmentTypeAsString() 
+    {
+        if (getItem() instanceof IoAttachmentItem) 
+        {
+             IoAttachmentItem attachmentItem = (IoAttachmentItem) getItem();
+            IoAttachmentType type = attachmentItem.getType();
+            if (type != null) 
+            {
+                switch (type)
+                {
+                    case EXTRACTOR:
+                        return "EXTRACTOR";
+                    case ATTRACTOR:
+                        return "ATTRACTOR";
+                    case FILTER:
+                        return "FILTER";
+                    default:
+                         return "UNKNOWN";
+                }
+            }
+        }
+        return "NONE";
+    }
 }

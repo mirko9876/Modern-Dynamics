@@ -62,7 +62,8 @@ public final class ItemCachedFilter {
     private final Map<ItemVariant, Integer> sentQuantities = new HashMap<>();
     private final Map<ItemVariant, Integer> receivedQuantities = new HashMap<>();
     private final Map<ItemVariant, Boolean> map_reset = new HashMap<>();
-
+    private final Map<ItemVariant, Long> ttlMap = new HashMap<>();
+    private long ttlDuration = 15000; // TTL duration in milliseconds, default 15 seconds
 
     public ItemCachedFilter(List<ItemVariant> filterConfig,
             FilterInversionMode filterInversion,
@@ -85,169 +86,176 @@ public final class ItemCachedFilter {
         }
     }
 
-    public boolean matchesItem(ItemVariant variant, IItemHandler chest, int maxExtracted) {
+    public boolean matchesItem(ItemVariant variant, IItemHandler chest, int maxExtracted, String attachmentType) {
         
         confirmReceipt(variant, chest);
 
         // Use pure variant for filtering
-        boolean isListed = isItemListed(variant, chest, maxExtracted);
+        boolean isListed = isItemListed(variant, chest, maxExtracted, attachmentType);
 
         // Apply inversion mode (whitelist/blacklist)
         boolean result = isListed == (filterInversion == FilterInversionMode.WHITELIST);
 
         // Confirm receipt if the item is listed and matches
-
-        confirmReceipt(variant, chest);
         return result;
     }
 
-    private boolean isItemListed(ItemVariant variant, IItemHandler chest, int maxAmount) {
+    private boolean isItemListed(ItemVariant variant, IItemHandler chest, int maxAmount, String attachmentType) {
         boolean itemIsListed = false;
-        confirmReceipt(variant, chest);
-        // When inclusion of all listed mods is enabled, matching by individual item/NBT/damage is pointless
-        if (filterMod == FilterModMode.INCLUDE_ALL_OF_MOD) {
-            if (getListedMods().contains(getModId(variant))) {
-                itemIsListed = true;
-            }
-        } else {
-            // Check if any of our filter items match this variant
-            for (ItemVariant filterVariant : listedVariants) {
-                // Check if it's an EntryFilterDefinitionItem
-                if (filterVariant.getItem() instanceof EntryFilterDefinitionItem) {
-                    String displayName = filterVariant.toStack().getHoverName().getString()
-                            .trim()
-                            .replace("'", "")
-                            .replace("\"", "");
+        int requiredQuantity = 0;
 
-                    // Macro filter: &enchanted
-                    if (displayName.equals("&enchanted")) {
-                        if (variant.toStack().isEnchanted()) {
-                            itemIsListed = true;
-                            break; // Exit early if the item is enchanted
-                        }
-                        continue; // Continue to next filter if not enchanted
-                    }
-                    // Macro filter: &damaged
-                    else if (displayName.equals("&damaged")) {
-                        if (variant.toStack().isDamaged()) {
-                            itemIsListed = true;
-                            break; // Exit early if the item is damaged
-                        }
-                        continue; // Continue to next filter if not damaged
-                    }
-                    // Macro filter: &stackable
-                    else if (displayName.equals("&stackable")) {
-                        if (variant.toStack().isStackable()) {
-                            itemIsListed = true;
-                            break; // Exit early if the item is stackable
-                        }
-                        continue; // Continue to next filter if not stackable
-                    }
-                    // Check for tag filter (#tag;number)
-                    else if (displayName.startsWith("#")) {
-                        String[] parts = displayName.split(";");
-                        String tagName = parts[0].substring(1);
-                        var tagLocation = ResourceLocation.tryParse(tagName);
-                        if (tagLocation != null) {
-                            var tagKey = TagKey.create(Registries.ITEM, tagLocation);
-                            var registry = BuiltInRegistries.ITEM;
+        if(sentQuantities.getOrDefault(variant, 0) < 1)
+        {updateReceivedQuantities(variant, chest);}
 
-                            for (var holder : registry.getTagOrEmpty(tagKey)) {
-                                if (holder.value() == variant.getItem()) {
-                                    itemIsListed = true;
-                                    if (parts.length == 2 && !parts[1].trim().isEmpty()) {
-                                        int requiredQuantity = Integer.parseInt(parts[1].trim());
-                                        int extracted = sentQuantities.getOrDefault(variant, 0);
-                                        ModernDynamics.LOGGER.info("Extracted: {}", extracted);
-                                        if (extracted >= requiredQuantity) {
-                                            itemIsListed = false; // Stop extraction if quantity is reached
+        for (ItemVariant filterVariant : listedVariants) {
+            if (filterVariant.getItem() instanceof EntryFilterDefinitionItem) {
+                String displayName = filterVariant.toStack().getHoverName().getString()
+                        .trim()
+                        .replace("'", "")
+                        .replace("\"", "");
 
-                                        } else if (map_reset.getOrDefault(variant, false)==false){
-                                            confirmReceipt(variant, chest);
-                                            sentQuantities.put(variant, extracted + maxAmount); // Update the map with actual extracted amount
-                                            ModernDynamics.LOGGER.info("Updated sentQuantities for {}: {}", variant, extracted + maxAmount);
-                                            confirmReceipt(variant, chest);
+                // Macro filter: &enchanted
+                if (displayName.equals("&enchanted")) {
+                    if (variant.toStack().isEnchanted()) {
+                        itemIsListed = true;
+                        break;
+                    }
+                    continue;
+                }
+                // Macro filter: &damaged
+                else if (displayName.equals("&damaged")) {
+                    if (variant.toStack().isDamaged()) {
+                        itemIsListed = true;
+                        break;
+                    }
+                    continue;
+                }
+                // Macro filter: &stackable
+                else if (displayName.equals("&stackable")) {
+                    if (variant.toStack().isStackable()) {
+                        itemIsListed = true;
+                        break;
+                    }
+                    continue;
+                }
+                // Check for tag filter (#tag;number)
+                else if (displayName.startsWith("#")) {
+                    String[] parts = displayName.split(";");
+                    String tagName = parts[0].substring(1);
+                    var tagLocation = ResourceLocation.tryParse(tagName);
+                    if (tagLocation != null) {
+                        var tagKey = TagKey.create(Registries.ITEM, tagLocation);
+                        var registry = BuiltInRegistries.ITEM;
+
+                        for (var holder : registry.getTagOrEmpty(tagKey)) {
+                            if (holder.value() == variant.getItem()) {
+                                itemIsListed = true;
+                                if (attachmentType.equals("ATTRACTOR") && parts.length == 2 && !parts[1].trim().isEmpty()) {
+                                    requiredQuantity = Integer.parseInt(parts[1].trim());
+                                    int extracted = sentQuantities.getOrDefault(variant, 0);
+                                    if (extracted >= requiredQuantity) {
+                                        itemIsListed = false;
+                                        if (!ttlMap.containsKey(variant)) {
+                                            ttlMap.put(variant, System.currentTimeMillis() + ttlDuration);
                                         }
+                                    } else if (map_reset.getOrDefault(variant, false) == false) {
+                                        confirmReceipt(variant, chest);
+                                        sentQuantities.put(variant, extracted + maxAmount);
                                     }
-                                    break;
+                                }else {
+                                    itemIsListed = true;
                                 }
+                                break;
                             }
-
                         }
                     }
-                    // Check for mod ID filter (@modid;number)
-                    else if (displayName.startsWith("@")) {
-                        String[] parts = displayName.split(";");
-                        String modId = parts[0].substring(1);
-                        if (modId.equals(getModId(variant))) {
+                }
+                // Check for mod ID filter (@modid;number)
+                else if (displayName.startsWith("@")) {
+                    String[] parts = displayName.split(";");
+                    String modId = parts[0].substring(1);
+                    if (modId.equals(getModId(variant))) {
+                        itemIsListed = true;
+                        if (attachmentType.equals("ATTRACTOR") && parts.length == 2 && !parts[1].trim().isEmpty()) {
+                            requiredQuantity = Integer.parseInt(parts[1].trim());
+                            int extracted = sentQuantities.getOrDefault(variant, 0);
+                            if (extracted >= requiredQuantity) {
+                                itemIsListed = false;
+                                if (!ttlMap.containsKey(variant)) {
+                                    ttlMap.put(variant, System.currentTimeMillis() + ttlDuration);
+                                }
+                            } else if (map_reset.getOrDefault(variant, false) == false) {
+                                confirmReceipt(variant, chest);
+                                sentQuantities.put(variant, extracted + maxAmount);
+                            }
+                        } else {
                             itemIsListed = true;
-                            if (parts.length == 2 && !parts[1].trim().isEmpty()) {
-                                int requiredQuantity = Integer.parseInt(parts[1].trim());
-                                int extracted = sentQuantities.getOrDefault(variant, 0);
-                                ModernDynamics.LOGGER.info("Extracted: {}", extracted);
-                                if (extracted >= requiredQuantity) {
-                                    itemIsListed = false; // Stop extraction if quantity is reached
-                                } else if (map_reset.getOrDefault(variant, false)==false){
-                                    confirmReceipt(variant, chest);
-                                    sentQuantities.put(variant, extracted + maxAmount); // Update the map with actual extracted amount
-                                    ModernDynamics.LOGGER.info("Updated sentQuantities for {}: {}", variant, extracted + maxAmount);
-                                    confirmReceipt(variant, chest);
-                                }
-                            }
                         }
                     }
-                    // Check for item filter (-item;number)
-                    else if (displayName.startsWith("-")) {
-                        String[] parts = displayName.split(";");
-
-                        String itemName = parts[0].substring(1);
-                        if (itemName.equals(variant.getItem().toString())) {
+                }
+                // Check for item filter (-item;number)
+                else if (displayName.startsWith("-")) {
+                    String[] parts = displayName.split(";");
+                    String itemName = parts[0].substring(1);
+                    if (itemName.equals(variant.getItem().toString())) {
+                        itemIsListed = true;
+                        if (attachmentType.equals("ATTRACTOR") && parts.length == 2 && !parts[1].trim().isEmpty()) {
+                            requiredQuantity = Integer.parseInt(parts[1].trim());
+                            int extracted = sentQuantities.getOrDefault(variant, 0);
+                            if (extracted >= requiredQuantity) {
+                                itemIsListed = false;
+                                if (!ttlMap.containsKey(variant)) {
+                                    ttlMap.put(variant, System.currentTimeMillis() + ttlDuration);
+                                }
+                            } else if (map_reset.getOrDefault(variant, false) == false) {
+                                confirmReceipt(variant, chest);
+                                sentQuantities.put(variant, extracted + maxAmount);
+                            }
+                        }else {
                             itemIsListed = true;
-                            if (parts.length == 2 && !parts[1].trim().isEmpty()) {
-                                int requiredQuantity = Integer.parseInt(parts[1].trim());
-                                int extracted = sentQuantities.getOrDefault(variant, 0);
-                                ModernDynamics.LOGGER.info("Extracted: {}", extracted);
-                                if (extracted >= requiredQuantity) {
-                                    itemIsListed = false; // Stop extraction if quantity is reached
-                                } else if (map_reset.getOrDefault(variant, false)==false){
-                                    confirmReceipt(variant, chest);
-                                    sentQuantities.put(variant, extracted + maxAmount); // Update the map with actual extracted amount
-                                    ModernDynamics.LOGGER.info("Updated sentQuantities for {}: {}", variant, extracted + maxAmount);
-                                    confirmReceipt(variant, chest);
-                                }
-                            }
                         }
                     }
-
+                }
+            } else {
+                // Normal item matching
+                if (filterNbt == FilterNbtMode.RESPECT_NBT) {
+                    itemIsListed = listedVariants.contains(variant);
                 } else {
-                    // Normal item matching
-                    if (filterNbt == FilterNbtMode.RESPECT_NBT) {
-                        itemIsListed = listedVariants.contains(variant);
-                    } else {
-                        itemIsListed = listedItems.contains(variant.getItem());
-                    }
+                    itemIsListed = listedItems.contains(variant.getItem());
                 }
             }
         }
 
-        // implemented upper
-        // The "ore dictionary" search could treat an otherwise unlisted item as listed based on its tags
-        if (!itemIsListed) {
-            // This block is intentionally left empty for future implementation
+        // Check TTL before returning the result
+        Long ttl = ttlMap.get(variant);
+        if (ttl != null && System.currentTimeMillis() > ttl) {
+            ttlMap.remove(variant);
+            confirmReceipt(variant, chest);
+            if(receivedQuantities.getOrDefault(variant, 0) < requiredQuantity && receivedQuantities.getOrDefault(variant, 0) > 0)
+            {
+                receivedQuantities.remove(variant, 0);
+                sentQuantities.remove(variant, 0);
+                itemIsListed = true;
+            }
+            map_reset.remove(variant);
         }
+
         confirmReceipt(variant, chest);
         return itemIsListed;
     }
 
     private int getItemQuantityInChest(ItemVariant variant, IItemHandler chest) {
-        int totalQuantity = 0;
-        for (int slot = 0; slot < chest.getSlots(); slot++) {
-            ItemStack itemStack = chest.getStackInSlot(slot);
-            if (!itemStack.isEmpty() && ItemVariant.of(itemStack).equals(variant)) {
-                totalQuantity += itemStack.getCount();
+        int total = 0;
+        for (int i = 0; i < chest.getSlots(); i++) {
+            ItemStack stack = chest.getStackInSlot(i);
+            String item0 = stack.getItem().toString();
+            String item1 = variant.toStack().getItem().toString();
+            if (item0.equals(item1)) {
+                total += stack.getCount();
             }
         }
-        return totalQuantity;
+        //ModernDynamics.LOGGER.info("Item quantity in chest for {}: {}", variant, total); // Log per debug
+        return total;
     }
 
     private Set<String> getListedMods() {
@@ -283,23 +291,32 @@ public final class ItemCachedFilter {
     public void confirmReceipt(ItemVariant variant, IItemHandler chest) {
         // Update received quantities (keep track of total items received)
         updateReceivedQuantities(variant, chest);
-        ModernDynamics.LOGGER.info("Updated receivedQuantities for {}: {}", variant, receivedQuantities.getOrDefault(variant, 0));
+        //ModernDynamics.LOGGER.info("Updated receivedQuantities for {}: {}", variant.toStack(), receivedQuantities.getOrDefault(variant, 0));
 
+        if(receivedQuantities.getOrDefault(variant, 0) > sentQuantities.getOrDefault(variant, 0))
+        {
+            sentQuantities.put(variant, receivedQuantities.getOrDefault(variant, 0));
+        }
 
         // Check if the quantity is back to zero and receivedQuantities is not zero
         if (receivedQuantities.getOrDefault(variant, 0) == sentQuantities.getOrDefault(variant, 0) && sentQuantities.getOrDefault(variant, 0) != 0) 
-        {map_reset.put(variant, true);}
+        {
+
+            map_reset.put(variant, true);
+            ttlMap.remove(variant);
+        }
+
   
         if(receivedQuantities.getOrDefault(variant, 0) == 0 && map_reset.getOrDefault(variant, false))
         {
             sentQuantities.put(variant, 0); // Reset the map if the quantity is zero and receivedQuantities is not zero
-            ModernDynamics.LOGGER.info("Reset sentQuantities for {}", variant);
+            //ModernDynamics.LOGGER.info("Reset sentQuantities for {}", variant);
 
 
             receivedQuantities.put(variant, 0); // Reset the map if the quantity is zero and receivedQuantities is not zero
 
 
-            ModernDynamics.LOGGER.info("Reset receivedQuantities for {}", variant);
+            //ModernDynamics.LOGGER.info("Reset receivedQuantities for {}", variant);
             map_reset.put(variant, false);
         }
     }
@@ -309,6 +326,16 @@ public final class ItemCachedFilter {
     private void updateReceivedQuantities(ItemVariant variant, IItemHandler chest) {
         int receivedAmount = getItemQuantityInChest(variant, chest);
         receivedQuantities.put(variant, receivedAmount);
-        ModernDynamics.LOGGER.info("Updated receivedQuantities for {}: {}", variant, receivedQuantities.getOrDefault(variant, 0));
+        //ModernDynamics.LOGGER.info("Updated receivedQuantities for {}: {}", variant, receivedAmount); // Log per debug
+    }
+
+    // Add a setter for TTL duration
+    public void setTtlDuration(long ttlDuration) {
+        this.ttlDuration = ttlDuration;
+    }
+
+    // Add a getter for TTL duration
+    public long getTtlDuration() {
+        return ttlDuration;
     }
 }

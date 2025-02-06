@@ -133,6 +133,21 @@ public class ItemHost extends NodeHost {
         });
     }
 
+    /**
+     * not work 
+     */
+    private IItemHandler createInsertStorage(Direction side, ItemAttachedIo extractor, @Nullable MaxParticipant maxParticipant) {
+        NetworkNode<ItemHost, ItemCache> node = findNode();
+        if (node == null) {
+            return EmptyItemHandler.INSTANCE; // Se non c'è un nodo, restituiamo uno storage vuoto
+        }
+        var cache = node.getNetworkCache();
+        var paths = rearrangePaths(cache.pathCache.getPaths(node, side.getOpposite()), extractor);
+        return new InsertionOnlyItemHandler((resource, maxAmount, simulate) -> {
+            return cache.insertList(node, paths, resource, maxAmount, simulate, extractor.getItemSpeedupFactor(), maxParticipant);
+        });
+    }
+
     protected EnumSet<Direction> getInventoryConnections() {
         return SerializationHelper.directionsFromMask((byte) inventoryConnections);
     }
@@ -204,11 +219,11 @@ public class ItemHost extends NodeHost {
                 return;
 
             var maxParticipant = new MaxParticipant();
-
+  
             if (move(
                     adjStorage,
                     buildExtractorNetworkInjectStorage(side, extractor, maxParticipant),
-                    v -> extractor.matchesItemFilter(v, adjStorage),
+                    v -> extractor.matchesItemFilter(v, adjStorage, extractor.getMaxItemsExtracted()),
                     extractor.getMaxItemsExtracted()) > 0) {
                 extractor.incrementRoundRobin(maxParticipant.getMax());
             }
@@ -257,7 +272,10 @@ public class ItemHost extends NodeHost {
                     var endpointFilter = path.getEndFilter(cache.level);
 
                     InsertionOnlyItemHandler insertStorage = new InsertionOnlyItemHandler((variant, maxAmount, simulate) -> {
-                        return insertTarget.insert(variant, maxAmount, simulate, (v, a) -> {
+                        // Ottieni il limite di estrazione specifico per l'item dal filtro
+                        int itemLimit = attractor.getItemExtractionLimit(variant);
+                        int amountToExtract = Math.min(maxAmount, itemLimit);
+                        return insertTarget.insert(variant, amountToExtract, simulate, (v, a) -> {
                             var reversedPath = path.reversed();
                             var travelingItem = reversedPath.makeTravelingItem(v, a, attractor.getItemSpeedupFactor());
                             reversedPath.getStartingPoint(cache.level).getHost().addTravelingItem(travelingItem);
@@ -266,15 +284,11 @@ public class ItemHost extends NodeHost {
                     toTransfer -= move(
                             extractTarget,
                             insertStorage,
-                            v -> attractor.matchesItemFilter(v, globalAdjStorage) && endpointFilter.test(v),
+                            v -> attractor.matchesItemFilter(v, globalAdjStorage, attractor.getMaxItemsExtracted()) && endpointFilter.test(v),
                             toTransfer);
                     if (toTransfer == 0)
                         break;
                 }
-            }
-
-            if (toTransfer < maxTransfer) {
-                attractor.incrementRoundRobin(nextPathIndex);
             }
         }
     }

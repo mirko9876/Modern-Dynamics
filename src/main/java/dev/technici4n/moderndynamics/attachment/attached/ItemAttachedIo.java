@@ -54,6 +54,8 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.core.registries.BuiltInRegistries;
+import dev.technici4n.moderndynamics.ModernDynamics;
 
 public class ItemAttachedIo extends AttachedIo {
 
@@ -186,8 +188,13 @@ public class ItemAttachedIo extends AttachedIo {
         setMaxItemsExtracted(getMaxItemsExtracted());
     }
 
+    public boolean matchesItemFilter(ItemVariant variant, IItemHandler chest, int extracted) {
+        return getCachedFilter().matchesItem(variant, chest, extracted, getAttachmentTypeAsString());
+    }
+
+
     public boolean matchesItemFilter(ItemVariant variant, IItemHandler chest) {
-        return getCachedFilter().matchesItem(variant, chest, maxItemsExtracted);
+        return getCachedFilter().matchesItem(variant, chest, maxItemsExtracted, getAttachmentTypeAsString());
     }
 
     public ItemVariant getFilter(int idx) {
@@ -417,4 +424,25 @@ public class ItemAttachedIo extends AttachedIo {
 
         return totalMoved;
     }
+
+    public int getItemExtractionLimit(ItemVariant variant) 
+    {
+        for (ItemVariant filterVariant : filters) 
+        {
+                String displayName = filterVariant.toStack().getHoverName().getString()
+                        .trim()
+
+                        .replace("'", "")
+                        .replace("\"", "");
+
+                if (displayName.startsWith("@") || displayName.startsWith("#") || displayName.startsWith("-")) {
+                    String[] parts = displayName.split(";");
+                    if (parts.length == 2 && !parts[1].trim().isEmpty()) {
+                        return Integer.parseInt(parts[1].trim());
+                    }
+                }
+        }
+        return Integer.MAX_VALUE;
+    }
 }
+
