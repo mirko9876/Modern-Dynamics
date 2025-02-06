@@ -216,6 +216,7 @@ public class ItemHost extends NodeHost {
     }
 
     public void tickAttractor(Direction side, ItemAttachedIo attractor) {
+        var globalAdjStorage = getAdjacentStorage(side, false);
         if (attractor.isStuffed()) {
             // Move from stuffed items to target
             var adjStorage = getAdjacentStorage(side, false);
@@ -265,7 +266,7 @@ public class ItemHost extends NodeHost {
                     toTransfer -= move(
                             extractTarget,
                             insertStorage,
-                            v -> attractor.matchesItemFilter(v, extractTarget) && endpointFilter.test(v),
+                            v -> attractor.matchesItemFilter(v, globalAdjStorage) && endpointFilter.test(v),
                             toTransfer);
                     if (toTransfer == 0)
                         break;

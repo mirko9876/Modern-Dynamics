@@ -86,6 +86,9 @@ public final class ItemCachedFilter {
     }
 
     public boolean matchesItem(ItemVariant variant, IItemHandler chest, int maxExtracted) {
+        
+        confirmReceipt(variant, chest);
+
         // Use pure variant for filtering
         boolean isListed = isItemListed(variant, chest, maxExtracted);
 
@@ -93,16 +96,14 @@ public final class ItemCachedFilter {
         boolean result = isListed == (filterInversion == FilterInversionMode.WHITELIST);
 
         // Confirm receipt if the item is listed and matches
-       
+
         confirmReceipt(variant, chest);
-
-
         return result;
     }
 
     private boolean isItemListed(ItemVariant variant, IItemHandler chest, int maxAmount) {
         boolean itemIsListed = false;
-
+        confirmReceipt(variant, chest);
         // When inclusion of all listed mods is enabled, matching by individual item/NBT/damage is pointless
         if (filterMod == FilterModMode.INCLUDE_ALL_OF_MOD) {
             if (getListedMods().contains(getModId(variant))) {
@@ -161,9 +162,11 @@ public final class ItemCachedFilter {
                                         if (extracted >= requiredQuantity) {
                                             itemIsListed = false; // Stop extraction if quantity is reached
 
-                                        } else {
+                                        } else if (map_reset.getOrDefault(variant, false)==false){
+                                            confirmReceipt(variant, chest);
                                             sentQuantities.put(variant, extracted + maxAmount); // Update the map with actual extracted amount
                                             ModernDynamics.LOGGER.info("Updated sentQuantities for {}: {}", variant, extracted + maxAmount);
+                                            confirmReceipt(variant, chest);
                                         }
                                     }
                                     break;
@@ -184,9 +187,11 @@ public final class ItemCachedFilter {
                                 ModernDynamics.LOGGER.info("Extracted: {}", extracted);
                                 if (extracted >= requiredQuantity) {
                                     itemIsListed = false; // Stop extraction if quantity is reached
-                                } else {
+                                } else if (map_reset.getOrDefault(variant, false)==false){
+                                    confirmReceipt(variant, chest);
                                     sentQuantities.put(variant, extracted + maxAmount); // Update the map with actual extracted amount
                                     ModernDynamics.LOGGER.info("Updated sentQuantities for {}: {}", variant, extracted + maxAmount);
+                                    confirmReceipt(variant, chest);
                                 }
                             }
                         }
@@ -204,9 +209,11 @@ public final class ItemCachedFilter {
                                 ModernDynamics.LOGGER.info("Extracted: {}", extracted);
                                 if (extracted >= requiredQuantity) {
                                     itemIsListed = false; // Stop extraction if quantity is reached
-                                } else {
+                                } else if (map_reset.getOrDefault(variant, false)==false){
+                                    confirmReceipt(variant, chest);
                                     sentQuantities.put(variant, extracted + maxAmount); // Update the map with actual extracted amount
                                     ModernDynamics.LOGGER.info("Updated sentQuantities for {}: {}", variant, extracted + maxAmount);
+                                    confirmReceipt(variant, chest);
                                 }
                             }
                         }
@@ -228,7 +235,7 @@ public final class ItemCachedFilter {
         if (!itemIsListed) {
             // This block is intentionally left empty for future implementation
         }
-
+        confirmReceipt(variant, chest);
         return itemIsListed;
     }
 
@@ -283,7 +290,7 @@ public final class ItemCachedFilter {
         if (receivedQuantities.getOrDefault(variant, 0) == sentQuantities.getOrDefault(variant, 0) && sentQuantities.getOrDefault(variant, 0) != 0) 
         {map_reset.put(variant, true);}
   
-        if(receivedQuantities.getOrDefault(variant, 0) == 0 && map_reset.getOrDefault(variant, true))
+        if(receivedQuantities.getOrDefault(variant, 0) == 0 && map_reset.getOrDefault(variant, false))
         {
             sentQuantities.put(variant, 0); // Reset the map if the quantity is zero and receivedQuantities is not zero
             ModernDynamics.LOGGER.info("Reset sentQuantities for {}", variant);
