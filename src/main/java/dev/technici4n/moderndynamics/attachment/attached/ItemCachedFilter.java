@@ -26,9 +26,11 @@ import dev.technici4n.moderndynamics.item.EntryFilterDefinitionItem;
 import dev.technici4n.moderndynamics.util.FluidVariant;
 import dev.technici4n.moderndynamics.util.ItemVariant;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -36,7 +38,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.items.IItemHandler;
 import org.jetbrains.annotations.Nullable;
+import dev.technici4n.moderndynamics.ModernDynamics;
 
 public final class ItemCachedFilter {
     private final Set<ItemVariant> listedVariants;
@@ -53,6 +58,11 @@ public final class ItemCachedFilter {
      */
     @Nullable
     private Set<String> listedMods;
+
+    private final Map<ItemVariant, Integer> sentQuantities = new HashMap<>();
+    private final Map<ItemVariant, Integer> receivedQuantities = new HashMap<>();
+    private final Map<ItemVariant, Boolean> map_reset = new HashMap<>();
+
 
     public ItemCachedFilter(List<ItemVariant> filterConfig,
             FilterInversionMode filterInversion,
@@ -75,8 +85,22 @@ public final class ItemCachedFilter {
         }
     }
 
-    private boolean isItemListed(ItemVariant variant) {
-        // Return value if the variant is included
+    public boolean matchesItem(ItemVariant variant, IItemHandler chest, int maxExtracted) {
+        // Use pure variant for filtering
+        boolean isListed = isItemListed(variant, chest, maxExtracted);
+
+        // Apply inversion mode (whitelist/blacklist)
+        boolean result = isListed == (filterInversion == FilterInversionMode.WHITELIST);
+
+        // Confirm receipt if the item is listed and matches
+       
+        confirmReceipt(variant, chest);
+
+
+        return result;
+    }
+
+    private boolean isItemListed(ItemVariant variant, IItemHandler chest, int maxAmount) {
         boolean itemIsListed = false;
 
         // When inclusion of all listed mods is enabled, matching by individual item/NBT/damage is pointless
@@ -94,9 +118,34 @@ public final class ItemCachedFilter {
                             .replace("'", "")
                             .replace("\"", "");
 
-                    // Check for tag filter (#tag)
-                    if (displayName.startsWith("#")) {
-                        String tagName = displayName.substring(1);
+                    // Macro filter: &enchanted
+                    if (displayName.equals("&enchanted")) {
+                        if (variant.toStack().isEnchanted()) {
+                            itemIsListed = true;
+                            break; // Exit early if the item is enchanted
+                        }
+                        continue; // Continue to next filter if not enchanted
+                    }
+                    // Macro filter: &damaged
+                    else if (displayName.equals("&damaged")) {
+                        if (variant.toStack().isDamaged()) {
+                            itemIsListed = true;
+                            break; // Exit early if the item is damaged
+                        }
+                        continue; // Continue to next filter if not damaged
+                    }
+                    // Macro filter: &stackable
+                    else if (displayName.equals("&stackable")) {
+                        if (variant.toStack().isStackable()) {
+                            itemIsListed = true;
+                            break; // Exit early if the item is stackable
+                        }
+                        continue; // Continue to next filter if not stackable
+                    }
+                    // Check for tag filter (#tag;number)
+                    else if (displayName.startsWith("#")) {
+                        String[] parts = displayName.split(";");
+                        String tagName = parts[0].substring(1);
                         var tagLocation = ResourceLocation.tryParse(tagName);
                         if (tagLocation != null) {
                             var tagKey = TagKey.create(Registries.ITEM, tagLocation);
@@ -105,19 +154,64 @@ public final class ItemCachedFilter {
                             for (var holder : registry.getTagOrEmpty(tagKey)) {
                                 if (holder.value() == variant.getItem()) {
                                     itemIsListed = true;
+                                    if (parts.length == 2 && !parts[1].trim().isEmpty()) {
+                                        int requiredQuantity = Integer.parseInt(parts[1].trim());
+                                        int extracted = sentQuantities.getOrDefault(variant, 0);
+                                        ModernDynamics.LOGGER.info("Extracted: {}", extracted);
+                                        if (extracted >= requiredQuantity) {
+                                            itemIsListed = false; // Stop extraction if quantity is reached
+
+                                        } else {
+                                            sentQuantities.put(variant, extracted + maxAmount); // Update the map with actual extracted amount
+                                            ModernDynamics.LOGGER.info("Updated sentQuantities for {}: {}", variant, extracted + maxAmount);
+                                        }
+                                    }
                                     break;
+                                }
+                            }
+
+                        }
+                    }
+                    // Check for mod ID filter (@modid;number)
+                    else if (displayName.startsWith("@")) {
+                        String[] parts = displayName.split(";");
+                        String modId = parts[0].substring(1);
+                        if (modId.equals(getModId(variant))) {
+                            itemIsListed = true;
+                            if (parts.length == 2 && !parts[1].trim().isEmpty()) {
+                                int requiredQuantity = Integer.parseInt(parts[1].trim());
+                                int extracted = sentQuantities.getOrDefault(variant, 0);
+                                ModernDynamics.LOGGER.info("Extracted: {}", extracted);
+                                if (extracted >= requiredQuantity) {
+                                    itemIsListed = false; // Stop extraction if quantity is reached
+                                } else {
+                                    sentQuantities.put(variant, extracted + maxAmount); // Update the map with actual extracted amount
+                                    ModernDynamics.LOGGER.info("Updated sentQuantities for {}: {}", variant, extracted + maxAmount);
                                 }
                             }
                         }
                     }
-                    // Check for mod ID filter (@modid)
-                    else if (displayName.startsWith("@")) {
-                        String modId = displayName.substring(1);
-                        if (modId.equals(getModId(variant))) {
+                    // Check for item filter (-item;number)
+                    else if (displayName.startsWith("-")) {
+                        String[] parts = displayName.split(";");
+
+                        String itemName = parts[0].substring(1);
+                        if (itemName.equals(variant.getItem().toString())) {
                             itemIsListed = true;
-                            break;
+                            if (parts.length == 2 && !parts[1].trim().isEmpty()) {
+                                int requiredQuantity = Integer.parseInt(parts[1].trim());
+                                int extracted = sentQuantities.getOrDefault(variant, 0);
+                                ModernDynamics.LOGGER.info("Extracted: {}", extracted);
+                                if (extracted >= requiredQuantity) {
+                                    itemIsListed = false; // Stop extraction if quantity is reached
+                                } else {
+                                    sentQuantities.put(variant, extracted + maxAmount); // Update the map with actual extracted amount
+                                    ModernDynamics.LOGGER.info("Updated sentQuantities for {}: {}", variant, extracted + maxAmount);
+                                }
+                            }
                         }
                     }
+
                 } else {
                     // Normal item matching
                     if (filterNbt == FilterNbtMode.RESPECT_NBT) {
@@ -132,14 +226,21 @@ public final class ItemCachedFilter {
         // implemented upper
         // The "ore dictionary" search could treat an otherwise unlisted item as listed based on its tags
         if (!itemIsListed) {
-
+            // This block is intentionally left empty for future implementation
         }
 
         return itemIsListed;
     }
 
-    public boolean matchesItem(ItemVariant variant) {
-        return isItemListed(variant) == (filterInversion == FilterInversionMode.WHITELIST);
+    private int getItemQuantityInChest(ItemVariant variant, IItemHandler chest) {
+        int totalQuantity = 0;
+        for (int slot = 0; slot < chest.getSlots(); slot++) {
+            ItemStack itemStack = chest.getStackInSlot(slot);
+            if (!itemStack.isEmpty() && ItemVariant.of(itemStack).equals(variant)) {
+                totalQuantity += itemStack.getCount();
+            }
+        }
+        return totalQuantity;
     }
 
     private Set<String> getListedMods() {
@@ -170,5 +271,37 @@ public final class ItemCachedFilter {
     @FunctionalInterface
     interface NbtMatcher {
         boolean matches(@Nullable CompoundTag a, @Nullable CompoundTag b);
+    }
+
+    public void confirmReceipt(ItemVariant variant, IItemHandler chest) {
+        // Update received quantities (keep track of total items received)
+        updateReceivedQuantities(variant, chest);
+        ModernDynamics.LOGGER.info("Updated receivedQuantities for {}: {}", variant, receivedQuantities.getOrDefault(variant, 0));
+
+
+        // Check if the quantity is back to zero and receivedQuantities is not zero
+        if (receivedQuantities.getOrDefault(variant, 0) == sentQuantities.getOrDefault(variant, 0) && sentQuantities.getOrDefault(variant, 0) != 0) 
+        {map_reset.put(variant, true);}
+  
+        if(receivedQuantities.getOrDefault(variant, 0) == 0 && map_reset.getOrDefault(variant, true))
+        {
+            sentQuantities.put(variant, 0); // Reset the map if the quantity is zero and receivedQuantities is not zero
+            ModernDynamics.LOGGER.info("Reset sentQuantities for {}", variant);
+
+
+            receivedQuantities.put(variant, 0); // Reset the map if the quantity is zero and receivedQuantities is not zero
+
+
+            ModernDynamics.LOGGER.info("Reset receivedQuantities for {}", variant);
+            map_reset.put(variant, false);
+        }
+    }
+
+
+
+    private void updateReceivedQuantities(ItemVariant variant, IItemHandler chest) {
+        int receivedAmount = getItemQuantityInChest(variant, chest);
+        receivedQuantities.put(variant, receivedAmount);
+        ModernDynamics.LOGGER.info("Updated receivedQuantities for {}: {}", variant, receivedQuantities.getOrDefault(variant, 0));
     }
 }

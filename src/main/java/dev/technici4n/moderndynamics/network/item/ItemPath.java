@@ -29,6 +29,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
+import net.neoforged.neoforge.capabilities.BlockCapability;
+import net.neoforged.neoforge.capabilities.Capabilities;
+
 
 public class ItemPath {
     /**
@@ -103,7 +106,8 @@ public class ItemPath {
                 if (!io.isEnabledViaRedstone(pipe)) {
                     return v -> false;
                 }
-                return io::matchesItemFilter;
+                var chest = level.getCapability(Capabilities.ItemHandler.BLOCK, endPipe, getTargetBlockSide());
+                return v -> io.matchesItemFilter(v, chest);
             }
         }
         return v -> true;

@@ -449,7 +449,7 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
                 double relativeY = mouseY - (topPos + SCROLLBAR_Y);
                 double scrollHeight = SCROLLBAR_HEIGHT - HANDLE_HEIGHT;
                 double scrollProgress = Mth.clamp(relativeY / scrollHeight, 0.0, 1.0);
-                int scrollOffset = (int)(scrollProgress * menu.getMaxScroll());
+                int scrollOffset = (int) (scrollProgress * menu.getMaxScroll());
                 // Round to nearest multiple of 5
                 scrollOffset = (scrollOffset / 5) * 5;
                 menu.setScrollOffset(scrollOffset);
@@ -476,7 +476,7 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
                 double relativeY = mouseY - (topPos + SCROLLBAR_Y);
                 double scrollHeight = SCROLLBAR_HEIGHT - HANDLE_HEIGHT;
                 double scrollProgress = Mth.clamp(relativeY / scrollHeight, 0.0, 1.0);
-                int scrollOffset = (int)(scrollProgress * menu.getMaxScroll());
+                int scrollOffset = (int) (scrollProgress * menu.getMaxScroll());
                 // Round to nearest multiple of 5
                 scrollOffset = (scrollOffset / 5) * 5;
                 menu.setScrollOffset(scrollOffset);

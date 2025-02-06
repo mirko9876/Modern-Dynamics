@@ -67,9 +67,13 @@
     "item.moderndynamics.attractor": "Attractor",
     "item.moderndynamics.debug_tool": "Debug Tool",
     "item.moderndynamics.entry_filter_definition": "Entry Filter Definition",
+    "item.moderndynamics.entry_filter_definition.tooltip.1": "Rename this item to filter by tag or mod:",
+    "item.moderndynamics.entry_filter_definition.tooltip.2": "- Use #tag to filter by item tag",
+    "item.moderndynamics.entry_filter_definition.tooltip.3": "- Use @mod to filter by mod ID",
     "item.moderndynamics.extractor": "Extractor",
     "item.moderndynamics.filter": "Filter",
     "item.moderndynamics.inhibitor": "Inhibitor",
+
     "item.moderndynamics.wrench": "Wrench",
     "itemGroup.moderndynamics.moderndynamics": "Modern Dynamics"
 }

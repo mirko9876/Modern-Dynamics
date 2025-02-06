@@ -208,7 +208,7 @@ public class ItemHost extends NodeHost {
             if (move(
                     adjStorage,
                     buildExtractorNetworkInjectStorage(side, extractor, maxParticipant),
-                    extractor::matchesItemFilter,
+                    v -> extractor.matchesItemFilter(v, adjStorage),
                     extractor.getMaxItemsExtracted()) > 0) {
                 extractor.incrementRoundRobin(maxParticipant.getMax());
             }
@@ -265,7 +265,7 @@ public class ItemHost extends NodeHost {
                     toTransfer -= move(
                             extractTarget,
                             insertStorage,
-                            v -> attractor.matchesItemFilter(v) && endpointFilter.test(v),
+                            v -> attractor.matchesItemFilter(v, extractTarget) && endpointFilter.test(v),
                             toTransfer);
                     if (toTransfer == 0)
                         break;
@@ -345,7 +345,7 @@ public class ItemHost extends NodeHost {
                 int inserted = 0;
                 // Check filter.
                 if (!checkAttachments || !(getAttachment(side) instanceof ItemAttachedIo io) ||
-                        io.matchesItemFilter(travelingItem.variant) && io.isEnabledViaRedstone(pipe)) {
+                        io.matchesItemFilter(travelingItem.variant, storage) && io.isEnabledViaRedstone(pipe)) {
                     var overflow = ItemHandlerHelper.insertItemStacked(storage, travelingItem.variant.toStack(travelingItem.amount), false);
                     inserted = travelingItem.amount - overflow.getCount();
                 }

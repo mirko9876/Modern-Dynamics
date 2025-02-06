@@ -18,6 +18,8 @@
  */
 package dev.technici4n.moderndynamics.init;
 
+import org.checkerframework.checker.units.qual.s;
+
 import dev.technici4n.moderndynamics.ModernDynamics;
 import dev.technici4n.moderndynamics.attachment.AttachmentItem;
 import dev.technici4n.moderndynamics.attachment.InhibitorAttachmentItem;
@@ -32,6 +34,12 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.Nullable;
+import java.util.List;
 
 public class MdItems {
     public static final PipeItem ITEM_PIPE = new PipeItem(MdBlocks.ITEM_PIPE);
@@ -161,4 +169,5 @@ public class MdItems {
                     return result ? 1.0F : 0.0F;
                 });
     }
+
 }

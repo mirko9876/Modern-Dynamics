@@ -186,8 +186,8 @@ public class ItemAttachedIo extends AttachedIo {
         setMaxItemsExtracted(getMaxItemsExtracted());
     }
 
-    public boolean matchesItemFilter(ItemVariant variant) {
-        return getCachedFilter().matchesItem(variant);
+    public boolean matchesItemFilter(ItemVariant variant, IItemHandler chest) {
+        return getCachedFilter().matchesItem(variant, chest, maxItemsExtracted);
     }
 
     public ItemVariant getFilter(int idx) {
