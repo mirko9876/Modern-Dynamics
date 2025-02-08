@@ -52,7 +52,7 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
     /**
      * Horizontal gap between setting buttons.
      */
-    protected static final int BUTTON_GAP = 6;
+    protected static final int BUTTON_GAP = 2;
 
     /**
      * Tab Border
@@ -78,11 +78,23 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
     protected static final int SCROLLBAR_WIDTH = 8;
     protected static final int SCROLLBAR_HEIGHT = 34;
     protected static final int HANDLE_HEIGHT = 8;
+    protected static final int BUTTON_WIDTH = 8;
+    protected static final int BUTTON_HEIGHT = 8;
 
     protected static final int SCROLLBAR_UV_X = 0;
     protected static final int SCROLLBAR_UV_Y = 0;
     protected static final int HANDLE_UV_X = 8;
     protected static final int HANDLE_UV_Y = 0;
+    protected static final int BUTTON_UP_UV_X = 16;
+    protected static final int BUTTON_UP_UV_Y = 0;
+    protected static final int BUTTON_DOWN_UV_X = 24;
+    protected static final int BUTTON_DOWN_UV_Y = 0;
+
+    // UV coordinates for the highlighted textures (below the normal ones)
+    protected static final int HIGHLIGHTED_SCROLLBAR_UV_Y = 8;
+    protected static final int HIGHLIGHTED_HANDLE_UV_Y = 8;
+    protected static final int HIGHLIGHTED_BUTTON_UP_UV_Y = 8;
+    protected static final int HIGHLIGHTED_BUTTON_DOWN_UV_Y = 8;
 
     protected static final ResourceLocation SCROLLBAR_TEXTURE = MdId.of("textures/gui/scrollbar.png");
     protected boolean isScrolling = false;
@@ -208,7 +220,7 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
         }
 
         // Render scrollbar last
-        renderScrollbar(guiGraphics);
+        renderScrollbar(guiGraphics, mouseX, mouseY);
     }
 
     private void renderRedstoneTabBg(GuiGraphics guiGraphics, float partialTicks) {
@@ -442,27 +454,54 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (isInScrollBar(mouseX, mouseY)) {
+        if (isInScrollUpButton(mouseX, mouseY)) {
+            menu.scrollUp(); menu.scrollUp(); menu.scrollUp(); menu.scrollUp(); menu.scrollUp();
+            return true;
+        } else if (isInScrollDownButton(mouseX, mouseY)) {
+            menu.scrollDown(); menu.scrollDown(); menu.scrollDown(); menu.scrollDown(); menu.scrollDown();
+
+            return true;
+
+        } else if (isInScrollHandle(mouseX, mouseY)) {
             isScrolling = true;
-            // Calculate initial scroll position based on click location
-            if (menu.getMaxScroll() > 0) {
-                double relativeY = mouseY - (topPos + SCROLLBAR_Y);
-                double scrollHeight = SCROLLBAR_HEIGHT - HANDLE_HEIGHT;
-                double scrollProgress = Mth.clamp(relativeY / scrollHeight, 0.0, 1.0);
-                int scrollOffset = (int) (scrollProgress * menu.getMaxScroll());
-                // Round to nearest multiple of 5
-                scrollOffset = (scrollOffset / 5) * 5;
-                menu.setScrollOffset(scrollOffset);
-            }
+            return true;
+        } else if (isInScrollBar(mouseX, mouseY)) {
+            float scrollPercent = Mth.clamp((float) (mouseY - (topPos + SCROLLBAR_Y)) / SCROLLBAR_HEIGHT, 0, 1);
+            int newScrollOffset = (int) (scrollPercent * menu.getMaxScroll());
+            menu.setScrollOffset(newScrollOffset);
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    private boolean isInScrollBar(double mouseX, double mouseY) {
+        int i = leftPos + SCROLLBAR_X;
+        int j = topPos + SCROLLBAR_Y;
+        return mouseX >= i && mouseY >= j && mouseX < i + SCROLLBAR_WIDTH && mouseY < j + SCROLLBAR_HEIGHT;
+    }
+
+    private boolean isInScrollUpButton(double mouseX, double mouseY) {
+        int i = leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH + BUTTON_GAP;
+        int j = topPos + SCROLLBAR_Y;
+        return mouseX >= i && mouseY >= j && mouseX < i + BUTTON_WIDTH && mouseY < j + BUTTON_HEIGHT;
+    }
+
+    private boolean isInScrollDownButton(double mouseX, double mouseY) {
+        int i = leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH + BUTTON_GAP;
+        int j = topPos + SCROLLBAR_Y + BUTTON_HEIGHT + BUTTON_GAP;
+        return mouseX >= i && mouseY >= j && mouseX < i + BUTTON_WIDTH && mouseY < j + BUTTON_HEIGHT;
+    }
+
+    private boolean isInScrollHandle(double mouseX, double mouseY) {
+        float scrollPercent = menu.getMaxScroll() > 0 ? (float) menu.getScrollOffset() / menu.getMaxScroll() : 0;
+        int handleY = topPos + SCROLLBAR_Y + (int) (scrollPercent * (SCROLLBAR_HEIGHT - HANDLE_HEIGHT));
+        return mouseX >= leftPos + SCROLLBAR_X && mouseY >= handleY && mouseX < leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH && mouseY < handleY + HANDLE_HEIGHT;
+    }
+
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (isScrolling) {
-            isScrolling = false;
+            isScrolling = false; // Disable scrolling when the mouse is released
             return true;
         }
         return super.mouseReleased(mouseX, mouseY, button);
@@ -497,28 +536,41 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
-    private boolean isInScrollBar(double mouseX, double mouseY) {
-        int i = leftPos + SCROLLBAR_X;
-        int j = topPos + SCROLLBAR_Y;
-        return mouseX >= i && mouseY >= j && mouseX < i + SCROLLBAR_WIDTH && mouseY < j + SCROLLBAR_HEIGHT;
-    }
+    private void renderScrollbar(GuiGraphics guiGraphics, double mouseX, double mouseY) {
+        // Check if the mouse is over the scrollbar or buttons
+        boolean isMouseOverScrollbar = isInScrollBar(mouseX, mouseY);
+        boolean isMouseOverUpButton = isInScrollUpButton(mouseX, mouseY);
+        boolean isMouseOverDownButton = isInScrollDownButton(mouseX, mouseY);
+        boolean isMouseOverHandle = isInScrollHandle(mouseX, mouseY);
 
-    private void renderScrollbar(GuiGraphics guiGraphics) {
-        // Render scrollbar background (8x34 pixels)
+        // Render the scrollbar (use normal texture, no highlighting)
         guiGraphics.blit(SCROLLBAR_TEXTURE,
                 leftPos + SCROLLBAR_X, topPos + SCROLLBAR_Y,
                 SCROLLBAR_UV_X, SCROLLBAR_UV_Y,
-                SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT,
-                16, 34);
+                8, 34,
+                32, 34);
 
+        // Render the "up" button (use highlighted texture if mouse is over)
+        guiGraphics.blit(SCROLLBAR_TEXTURE,
+                leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH + BUTTON_GAP, topPos + SCROLLBAR_Y,
+                BUTTON_UP_UV_X, isMouseOverUpButton ? HIGHLIGHTED_BUTTON_UP_UV_Y : BUTTON_UP_UV_Y,
+                8, 8, 
+                32, 34);
+
+        // Render the "down" button (use highlighted texture if mouse is over)
+        guiGraphics.blit(SCROLLBAR_TEXTURE,
+                leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH + BUTTON_GAP, topPos + SCROLLBAR_Y + BUTTON_HEIGHT + BUTTON_GAP,
+                BUTTON_DOWN_UV_X, isMouseOverDownButton ? HIGHLIGHTED_BUTTON_DOWN_UV_Y : BUTTON_DOWN_UV_Y,
+                8, 8,
+                32, 34);
+
+        // Render the handle (use highlighted texture if mouse is over)
         float scrollPercent = menu.getMaxScroll() > 0 ? (float) menu.getScrollOffset() / menu.getMaxScroll() : 0;
         int handleY = topPos + SCROLLBAR_Y + (int) (scrollPercent * (SCROLLBAR_HEIGHT - HANDLE_HEIGHT));
-
-        // Render handle (8x8 pixels)
         guiGraphics.blit(SCROLLBAR_TEXTURE,
                 leftPos + SCROLLBAR_X, handleY,
-                HANDLE_UV_X, HANDLE_UV_Y,
-                SCROLLBAR_WIDTH, HANDLE_HEIGHT,
-                16, 34);
+                HANDLE_UV_X, isMouseOverHandle ? HIGHLIGHTED_HANDLE_UV_Y : HANDLE_UV_Y,
+                8, 8, 
+                32, 34);
     }
 }

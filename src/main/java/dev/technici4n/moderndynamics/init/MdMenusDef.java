@@ -18,19 +18,22 @@
  */
 package dev.technici4n.moderndynamics.init;
 
-import dev.technici4n.moderndynamics.attachment.attached.FluidAttachedIo;
-import dev.technici4n.moderndynamics.attachment.attached.ItemAttachedIo;
-import dev.technici4n.moderndynamics.gui.menu.AttachmentMenuType;
-import dev.technici4n.moderndynamics.gui.menu.FluidAttachedIoMenu;
-import dev.technici4n.moderndynamics.gui.menu.ItemAttachedIoMenu;
 import net.minecraft.world.inventory.MenuType;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
+import net.minecraft.core.registries.Registries;
+import dev.technici4n.moderndynamics.gui.menu.EntryFilterMenu;
+import dev.technici4n.moderndynamics.util.MdId;
 
 
-public class MdMenus {
-    public static final MenuType<ItemAttachedIoMenu> ITEM_IO = AttachmentMenuType.create("item_io", ItemAttachedIo::new,
-            ItemAttachedIoMenu::new);
-    public static final MenuType<FluidAttachedIoMenu> FLUID_IO = AttachmentMenuType.create("fluid_io",
-            FluidAttachedIo::new, FluidAttachedIoMenu::new);
+
+public class MdMenusDef {
+
+    public static final DeferredRegister<MenuType<?>> REGISTRY = DeferredRegister.create(Registries.MENU, MdId.MOD_ID);
+	public static final DeferredHolder<MenuType<?>, MenuType<EntryFilterMenu>> ENTRY_FILTER = REGISTRY.register("entry_filter", () -> IMenuTypeExtension.create(EntryFilterMenu::new));
+
+
 
     public static void init() {
         // Initialize menus here

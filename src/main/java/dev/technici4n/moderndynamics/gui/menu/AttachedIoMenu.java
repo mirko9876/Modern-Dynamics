@@ -241,4 +241,12 @@ public class AttachedIoMenu<A extends AttachedIo> extends AbstractContainerMenu 
     public int getMaxScroll() {
         return Math.max(0, Constants.Upgrades.MAX_FILTER - SLOTS_PER_PAGE);
     }
+
+    public void scrollUp() {
+        setScrollOffset(scrollOffset - 1);
+    }
+
+    public void scrollDown() {
+        setScrollOffset(scrollOffset + 1);
+    }
 }

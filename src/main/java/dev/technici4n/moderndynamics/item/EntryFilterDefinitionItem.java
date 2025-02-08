@@ -19,30 +19,50 @@
 package dev.technici4n.moderndynamics.item;
 
 import net.minecraft.world.item.Item;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.network.chat.Component;
+import io.netty.buffer.Unpooled;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.core.BlockPos;
 
-import java.util.List;
+import dev.technici4n.moderndynamics.gui.menu.EntryFilterMenu;
+
+
 
 public class EntryFilterDefinitionItem extends Item {
     public EntryFilterDefinitionItem() {
         super(new Item.Properties().stacksTo(1));
     }
 
+    @Override
+    public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand) {
+        if (!world.isClientSide && player instanceof ServerPlayer serverPlayer) {
+            BlockPos pos = player.blockPosition();
+            serverPlayer.openMenu(new MenuProvider() {
+                @Override
+                public Component getDisplayName() {
+                    return Component.translatable("gui.moderndynamics.entry_filter.title");
+                }
 
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        // Add a basic tooltip
-        tooltip.add(Component.translatable("tooltip.moderndynamics.entry_filter.description"));
+                @Override
+                public boolean shouldTriggerClientSideContainerClosingOnOpen() {
+                    return false;
+                }
 
-        // Add additional information if needed
-        if (flag.isAdvanced()) {
-            tooltip.add(Component.translatable("tooltip.moderndynamics.entry_filter.advanced_info"));
+                @Override
+                public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+                    return new EntryFilterMenu(containerId, playerInventory, new FriendlyByteBuf(Unpooled.buffer()).writeBlockPos(pos));
+                }
+            }, pos);
         }
+        return InteractionResultHolder.success(player.getItemInHand(hand));
     }
 }

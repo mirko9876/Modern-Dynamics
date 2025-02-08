@@ -25,6 +25,7 @@ import dev.technici4n.moderndynamics.init.MdBlockEntities;
 import dev.technici4n.moderndynamics.init.MdBlocks;
 import dev.technici4n.moderndynamics.init.MdItems;
 import dev.technici4n.moderndynamics.init.MdMenus;
+import dev.technici4n.moderndynamics.init.MdMenusDef;
 import dev.technici4n.moderndynamics.network.NetworkManager;
 import dev.technici4n.moderndynamics.network.TickHelper;
 import dev.technici4n.moderndynamics.network.item.SimulatedInsertionTargets;
@@ -43,9 +44,9 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
-import net.neoforged.neoforge.registries.DeferredRegister;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
 
 @Mod(MdId.MOD_ID)
 public class ModernDynamics {
@@ -55,6 +56,7 @@ public class ModernDynamics {
         modEvents.addListener(RegisterEvent.class, this::register);
         modEvents.addListener(RegisterPayloadHandlersEvent.class, this::registerPayloadHandlers);
 
+        MdMenusDef.REGISTRY.register(modEvents);
 
         modEvents.addListener(MdBlockEntities::registerCapabilities);
         NeoForge.EVENT_BUS.addListener(ServerStoppedEvent.class, e -> {

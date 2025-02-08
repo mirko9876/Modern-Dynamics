@@ -75,5 +75,7 @@
     "item.moderndynamics.inhibitor": "Inhibitor",
 
     "item.moderndynamics.wrench": "Wrench",
-    "itemGroup.moderndynamics.moderndynamics": "Modern Dynamics"
+    "itemGroup.moderndynamics.moderndynamics": "Modern Dynamics",
+
+    "gui.moderndynamics.entry_filter.title": "Entry Filter Configuration"
 }
