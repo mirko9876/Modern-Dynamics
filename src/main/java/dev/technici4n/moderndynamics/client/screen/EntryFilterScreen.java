@@ -14,6 +14,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.util.Mth;
 import dev.technici4n.moderndynamics.util.MdId;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.client.gui.components.EditBox;
 
 public class EntryFilterScreen extends AbstractContainerScreen<EntryFilterMenu> {
 	private static final ResourceLocation BACKGROUND = ResourceLocation.parse("moderndynamics:textures/gui/entry_filter.png");
@@ -59,8 +60,10 @@ public class EntryFilterScreen extends AbstractContainerScreen<EntryFilterMenu> 
 	protected static final ResourceLocation SCROLLBAR_TEXTURE = MdId.of("textures/gui/scrollbar.png");
 	protected boolean isScrolling = false;
 
-	public EntryFilterScreen(EntryFilterMenu menu, Inventory inventory, Component text) {
-		super(menu, inventory, text);
+	private EditBox textBox;
+
+	public EntryFilterScreen(EntryFilterMenu menu, Inventory inventory, Component title) {
+		super(menu, inventory, title);
 		this.world = menu.world;
 		this.x = menu.x;
 		this.y = menu.y;
@@ -80,36 +83,44 @@ public class EntryFilterScreen extends AbstractContainerScreen<EntryFilterMenu> 
 	@Override
 	protected void init() {
 		super.init();
+
+		// Add the text box, centered horizontally
+		int textBoxWidth = 100;
+		int textBoxX = this.leftPos + (this.imageWidth - textBoxWidth) / 2;
+		int textBoxY = this.topPos + 130;
+		this.textBox = new EditBox(this.font, textBoxX, textBoxY, textBoxWidth, 10, Component.translatable("gui.moderndynamics.entry_filter.text_box"));
+		this.textBox.setMaxLength(100);
+		this.addRenderableWidget(this.textBox);
 	}
 
 	@Override
 	protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
-		// Render the background texture using the BACKGROUND constant
-		guiGraphics.blit(BACKGROUND, leftPos, topPos, 0, 0, imageWidth, imageHeight, 200, 240);
+		// Render the background with hardcoded values
+		guiGraphics.blit(BACKGROUND, this.leftPos, this.topPos, 0, 0, 200, 240, 200, 240);
 		guiGraphics.pose().pushPose();
 
-		// Render visible entries
-		int startIndex = menu.getScrollOffset();
-		for (int i = 0; i < ENTRIES_PER_PAGE; i++) {
+		// Render the entries
+		int startIndex = this.menu.getScrollOffset();
+		for (int i = 0; i < 4; i++) {
 			int entryIndex = startIndex + i;
-			if (entryIndex < MAX_ENTRIES) {
-				int entryX = leftPos + (imageWidth - 104) / 2;
-				int entryY = topPos + ENTRY_Y_OFFSET + i * ENTRY_HEIGHT;
+			if (entryIndex < 40) {
+				int entryX = this.leftPos + (this.imageWidth - 104) / 2;
+				int entryY = this.topPos + 20 + i * 24;
 
-				// Render entry texture
+				// Render the entry texture
 				guiGraphics.blit(ENTRY_TEXTURE, entryX, entryY, 0, 0, 104, 24, 104, 24);
 
-				// Render temporary text with smaller sizes
+				// Render temporary text
 				guiGraphics.pose().pushPose();
 				guiGraphics.pose().translate(entryX + 5, entryY + 5, 0);
 				guiGraphics.pose().scale(0.75f, 0.75f, 1.0f);
-				guiGraphics.drawString(font, "Entry iteration: " + entryIndex, 0, 0, 0xFFFFFF, false);
+				guiGraphics.drawString(this.font, "Entry iteration: " + entryIndex, 0, 0, 0xFFFFFF, false);
 				guiGraphics.pose().popPose();
 
 				guiGraphics.pose().pushPose();
 				guiGraphics.pose().translate(entryX + 5, entryY + 15, 0);
 				guiGraphics.pose().scale(0.5f, 0.5f, 1.0f);
-				guiGraphics.drawString(font, "Entry info", 0, 0, 0xFFFFFF, false);
+				guiGraphics.drawString(this.font, "Entry info", 0, 0, 0xFFFFFF, false);
 				guiGraphics.pose().popPose();
 			}
 		}
@@ -127,30 +138,30 @@ public class EntryFilterScreen extends AbstractContainerScreen<EntryFilterMenu> 
 
 		// Render the scrollbar (use normal texture, no highlighting)
 		guiGraphics.blit(SCROLLBAR_TEXTURE,
-				leftPos + SCROLLBAR_X, topPos + SCROLLBAR_Y,
+				this.leftPos + SCROLLBAR_X, this.topPos + SCROLLBAR_Y,
 				SCROLLBAR_UV_X, SCROLLBAR_UV_Y,
 				8, 34,
 				32, 34);
 
 		// Render the "up" button (use highlighted texture if mouse is over)
 		guiGraphics.blit(SCROLLBAR_TEXTURE,
-				leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH + BUTTON_GAP, topPos + SCROLLBAR_Y,
+				this.leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH + BUTTON_GAP, this.topPos + SCROLLBAR_Y,
 				BUTTON_UP_UV_X, isMouseOverUpButton ? HIGHLIGHTED_BUTTON_UP_UV_Y : BUTTON_UP_UV_Y,
 				8, 8, 
 				32, 34);
 
 		// Render the "down" button (use highlighted texture if mouse is over)
 		guiGraphics.blit(SCROLLBAR_TEXTURE,
-				leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH + BUTTON_GAP, topPos + SCROLLBAR_Y + BUTTON_HEIGHT + BUTTON_GAP,
+				this.leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH + BUTTON_GAP, this.topPos + SCROLLBAR_Y + BUTTON_HEIGHT + BUTTON_GAP,
 				BUTTON_DOWN_UV_X, isMouseOverDownButton ? HIGHLIGHTED_BUTTON_DOWN_UV_Y : BUTTON_DOWN_UV_Y,
 				8, 8,
 				32, 34);
 
 		// Render the handle (use highlighted texture if mouse is over)
-		float scrollPercent = MAX_SCROLL > 0 ? (float) menu.getScrollOffset() / (MAX_SCROLL) : 0;
-		int handleY = topPos + SCROLLBAR_Y + (int) (scrollPercent * (SCROLLBAR_HEIGHT - HANDLE_HEIGHT));
+		float scrollPercent = MAX_SCROLL > 0 ? (float) this.menu.getScrollOffset() / (MAX_SCROLL) : 0;
+		int handleY = this.topPos + SCROLLBAR_Y + (int) (scrollPercent * (SCROLLBAR_HEIGHT - HANDLE_HEIGHT));
 		guiGraphics.blit(SCROLLBAR_TEXTURE,
-				leftPos + SCROLLBAR_X, handleY,
+				this.leftPos + SCROLLBAR_X, handleY,
 				HANDLE_UV_X, isMouseOverHandle ? HIGHLIGHTED_HANDLE_UV_Y : HANDLE_UV_Y,
 				8, 8, 
 				32, 34);
@@ -158,6 +169,7 @@ public class EntryFilterScreen extends AbstractContainerScreen<EntryFilterMenu> 
 
 	@Override
 	protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+		// Render the title
 		int titleWidth = this.font.width(this.title);
 		int titleX = (this.imageWidth - titleWidth) / 2;
 		guiGraphics.drawString(this.font, this.title, titleX, this.titleLabelY, 0x404040, false);
@@ -175,18 +187,18 @@ public class EntryFilterScreen extends AbstractContainerScreen<EntryFilterMenu> 
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (isInScrollUpButton(mouseX, mouseY)) {
-			menu.scrollUp();menu.scrollUp();menu.scrollUp();menu.scrollUp();menu.scrollUp();
+			this.menu.scrollUp();this.menu.scrollUp();this.menu.scrollUp();this.menu.scrollUp();this.menu.scrollUp();
 			return true;
 		} else if (isInScrollDownButton(mouseX, mouseY)) {
-			menu.scrollDown();menu.scrollDown();menu.scrollDown();menu.scrollDown();menu.scrollDown();
+			this.menu.scrollDown();this.menu.scrollDown();this.menu.scrollDown();this.menu.scrollDown();this.menu.scrollDown();
 			return true;
 		} else if (isInScrollHandle(mouseX, mouseY)) {
 			isScrolling = true;
 			return true;
 		} else if (isInScrollBar(mouseX, mouseY)) {
-			float scrollPercent = Mth.clamp((float) (mouseY - (topPos + SCROLLBAR_Y)) / SCROLLBAR_HEIGHT, 0, 1);
+			float scrollPercent = Mth.clamp((float) (mouseY - (this.topPos + SCROLLBAR_Y)) / SCROLLBAR_HEIGHT, 0, 1);
 			int newScrollOffset = (int) (scrollPercent * MAX_SCROLL);
-			menu.setScrollOffset(newScrollOffset);
+			this.menu.setScrollOffset(newScrollOffset);
 			return true;
 		}
 		return super.mouseClicked(mouseX, mouseY, button);
@@ -204,9 +216,9 @@ public class EntryFilterScreen extends AbstractContainerScreen<EntryFilterMenu> 
 	@Override
 	public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
 		if (isScrolling) {
-			float scrollPercent = Mth.clamp((float) (mouseY - (topPos + SCROLLBAR_Y)) / (SCROLLBAR_HEIGHT - HANDLE_HEIGHT), 0, 1);
+			float scrollPercent = Mth.clamp((float) (mouseY - (this.topPos + SCROLLBAR_Y)) / (SCROLLBAR_HEIGHT - HANDLE_HEIGHT), 0, 1);
 			int newScrollOffset = (int) (scrollPercent * MAX_SCROLL);
-			menu.setScrollOffset(newScrollOffset);
+			this.menu.setScrollOffset(newScrollOffset);
 			return true;
 		}
 		return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
@@ -215,35 +227,35 @@ public class EntryFilterScreen extends AbstractContainerScreen<EntryFilterMenu> 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
 		if (verticalAmount != 0) {
-			int currentScroll = menu.getScrollOffset();
+			int currentScroll = this.menu.getScrollOffset();
 			int newScroll = currentScroll - (int) Math.signum(verticalAmount);
-			menu.setScrollOffset(newScroll);
+			this.menu.setScrollOffset(newScroll);
 			return true;
 		}
 		return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
 	}
 
 	private boolean isInScrollBar(double mouseX, double mouseY) {
-		int i = leftPos + SCROLLBAR_X;
-		int j = topPos + SCROLLBAR_Y;
+		int i = this.leftPos + SCROLLBAR_X;
+		int j = this.topPos + SCROLLBAR_Y;
 		return mouseX >= i && mouseY >= j && mouseX < i + SCROLLBAR_WIDTH && mouseY < j + SCROLLBAR_HEIGHT;
 	}
 
 	private boolean isInScrollUpButton(double mouseX, double mouseY) {
-		int i = leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH + BUTTON_GAP;
-		int j = topPos + SCROLLBAR_Y;
+		int i = this.leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH + BUTTON_GAP;
+		int j = this.topPos + SCROLLBAR_Y;
 		return mouseX >= i && mouseY >= j && mouseX < i + BUTTON_WIDTH && mouseY < j + BUTTON_HEIGHT;
 	}
 
 	private boolean isInScrollDownButton(double mouseX, double mouseY) {
-		int i = leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH + BUTTON_GAP;
-		int j = topPos + SCROLLBAR_Y + BUTTON_HEIGHT + BUTTON_GAP;
+		int i = this.leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH + BUTTON_GAP;
+		int j = this.topPos + SCROLLBAR_Y + BUTTON_HEIGHT + BUTTON_GAP;
 		return mouseX >= i && mouseY >= j && mouseX < i + BUTTON_WIDTH && mouseY < j + BUTTON_HEIGHT;
 	}
 
 	private boolean isInScrollHandle(double mouseX, double mouseY) {
-		float scrollPercent = MAX_SCROLL > 0 ? (float) menu.getScrollOffset() / (MAX_SCROLL) : 0;
-		int handleY = topPos + SCROLLBAR_Y + (int) (scrollPercent * (SCROLLBAR_HEIGHT - HANDLE_HEIGHT));
-		return mouseX >= leftPos + SCROLLBAR_X && mouseY >= handleY && mouseX < leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH && mouseY < handleY + HANDLE_HEIGHT;
+		float scrollPercent = MAX_SCROLL > 0 ? (float) this.menu.getScrollOffset() / (MAX_SCROLL) : 0;
+		int handleY = this.topPos + SCROLLBAR_Y + (int) (scrollPercent * (SCROLLBAR_HEIGHT - HANDLE_HEIGHT));
+		return mouseX >= this.leftPos + SCROLLBAR_X && mouseY >= handleY && mouseX < this.leftPos + SCROLLBAR_X + SCROLLBAR_WIDTH && mouseY < handleY + HANDLE_HEIGHT;
 	}
 }
