@@ -42,6 +42,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
@@ -455,20 +456,22 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (isInScrollUpButton(mouseX, mouseY)) {
-            menu.scrollUp(); menu.scrollUp(); menu.scrollUp(); menu.scrollUp(); menu.scrollUp();
+            menu.setScrollOffset(menu.getScrollOffset() - 5);
+            playClickSound();
             return true;
         } else if (isInScrollDownButton(mouseX, mouseY)) {
-            menu.scrollDown(); menu.scrollDown(); menu.scrollDown(); menu.scrollDown(); menu.scrollDown();
-
+            menu.setScrollOffset(menu.getScrollOffset() + 5 );
+            playClickSound();
             return true;
-
         } else if (isInScrollHandle(mouseX, mouseY)) {
             isScrolling = true;
+            playClickSound();
             return true;
         } else if (isInScrollBar(mouseX, mouseY)) {
             float scrollPercent = Mth.clamp((float) (mouseY - (topPos + SCROLLBAR_Y)) / SCROLLBAR_HEIGHT, 0, 1);
             int newScrollOffset = (int) (scrollPercent * menu.getMaxScroll());
             menu.setScrollOffset(newScrollOffset);
+            playClickSound();
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -501,7 +504,8 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (isScrolling) {
-            isScrolling = false; // Disable scrolling when the mouse is released
+            isScrolling = false;
+            playClickSound();
             return true;
         }
         return super.mouseReleased(mouseX, mouseY, button);
@@ -529,11 +533,16 @@ public class AttachedIoScreen<T extends AttachedIoMenu<?>> extends AbstractConta
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (verticalAmount != 0) {
             int currentScroll = menu.getScrollOffset();
-            // Scroll 5 slots at a time for better UX
             menu.setScrollOffset(currentScroll - (int) Math.signum(verticalAmount) * 5);
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+    }
+
+    private void playClickSound() {
+        if (this.minecraft != null && this.minecraft.player != null) {
+            this.minecraft.player.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.5f, 1.0f);
+        }
     }
 
     private void renderScrollbar(GuiGraphics guiGraphics, double mouseX, double mouseY) {

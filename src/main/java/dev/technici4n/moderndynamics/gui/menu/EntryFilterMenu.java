@@ -2,8 +2,10 @@ package dev.technici4n.moderndynamics.gui.menu;
 
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.SlotItemHandler;
 
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
 
 import net.minecraft.world.item.ItemStack;
@@ -24,6 +26,12 @@ import java.util.function.Supplier;
 import java.util.Map;
 import java.util.HashMap;
 
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
+import net.minecraft.resources.ResourceLocation;
+import java.util.List;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 
 public class EntryFilterMenu extends AbstractContainerMenu {
 	public final static HashMap<String, Object> guistate = new HashMap<>();
@@ -39,6 +47,14 @@ public class EntryFilterMenu extends AbstractContainerMenu {
 	private BlockEntity boundBlockEntity = null;
 	private int scrollOffset = 0;
 	private static final int MAX_SCROLL_OFFSET = 40 - 4; // 40 entries total, 4 visible per page
+	private int selectedEntry = -1; // -1 significa nessuna entry selezionata
+
+	// Add a custom ItemStackHandler for the autonomous slot
+	private final ItemStackHandler customSlotHandler = new ItemStackHandler(1);
+
+	// Variabili per memorizzare il testo delle barre
+	private String mainBarText = "";
+	private String slotBarText = "";
 
 	public EntryFilterMenu(int containerId, Inventory playerInventory, FriendlyByteBuf extraData) {
 		super(MdMenusDef.ENTRY_FILTER.get(), containerId);
@@ -55,6 +71,14 @@ public class EntryFilterMenu extends AbstractContainerMenu {
 			this.z = pos.getZ();
 			access = ContainerLevelAccess.create(world, pos);
 		}
+
+		this.addSlot(new SlotItemHandler(customSlotHandler, 0, 18, 62) {
+			@Override
+			public boolean mayPlace(ItemStack stack) {
+				// Define what items can be placed in this slot (e.g., allow all items)
+				return true;
+			}
+		});
 
 		// Add player inventory slots
 		for (int row = 0; row < 3; row++) {
@@ -126,4 +150,161 @@ public class EntryFilterMenu extends AbstractContainerMenu {
 		setScrollOffset(scrollOffset + 1);
 	}
 
+	@Override
+	public void removed(Player player) {
+		// Handle item return when the GUI is closed
+		ItemStack itemStack = customSlotHandler.getStackInSlot(0);
+		if (!itemStack.isEmpty()) {
+			// Try to add the item to the player's inventory
+			if (!player.getInventory().add(itemStack)) {
+				// If the inventory is full, drop the item on the ground
+				player.drop(itemStack, false);
+			}
+			customSlotHandler.setStackInSlot(0, ItemStack.EMPTY); // Clear the slot
+		}
+		super.removed(player);
+	}
+
+	public void selectEntry(int entryIndex) {
+		if (entryIndex >= 0 && entryIndex < MAX_SCROLL_OFFSET) {
+			this.selectedEntry = entryIndex;
+			// Notifica eventuali listener o aggiorna lo stato
+		}
+	}
+
+	public boolean isEntrySelected(int entryIndex) {
+		return this.selectedEntry == entryIndex;
+	}
+
+	public String getEntry(int entryIndex) {
+		// Vettore di stringhe per casi particolari
+		String[] specialEntries = {
+			"&enchanted",
+			"&damaged",
+			"&stackable"
+		};
+
+		// Controlla se l'entryIndex corrisponde a un caso particolare
+		if (entryIndex >= 0 && entryIndex < specialEntries.length) {
+			return specialEntries[entryIndex];
+		}
+
+		// Ottieni l'oggetto dalla slot custom
+		ItemStack stack = getItemInCustomSlot();
+		if (stack.isEmpty()) {
+			return "";
+		}
+
+		// Ottieni la lista di tag come array
+		List<TagKey<Item>> tags = stack.getTags().toList();
+
+		// Cicla la lista di tag
+		int currentIndex = specialEntries.length;
+		for (TagKey<Item> tagKey : tags) {
+			if (currentIndex == entryIndex) {
+				// Restituisci la tag con il prefisso # (es. "#c:gems")
+				return "#" + tagKey.location().toString();
+			}
+			currentIndex++;
+		}
+
+		// Se non ci sono più tag, restituisci il nome dell'oggetto nel formato -namespace:item
+		if (currentIndex == entryIndex) {
+			ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+			return "-" + itemId.toString(); // Esempio: "-minecraft:diamond"
+		}
+
+		// Se non c'è altro, restituisci il modID
+		if (currentIndex + 1 == entryIndex) {
+			return "@" + getModId();
+		}
+
+		// Se superiamo la entryIndex, restituiamo una stringa vuota
+		return "";
+
+	}
+
+	public ItemStack getItemInCustomSlot() {
+		return this.customSlotHandler.getStackInSlot(0);
+	}
+
+	public String getModId() {
+		// Ottieni l'oggetto dalla slot custom
+		ItemStack stack = getItemInCustomSlot();
+		if (stack.isEmpty()) {
+			return "";
+		}
+
+		// Ottieni il modID dell'oggetto
+		ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+		return itemId.getNamespace();
+	}
+
+	public String getInfo(String entry) {
+		if (entry == null || entry.isEmpty()) {
+			return "";
+		}
+
+		// Controlla il primo carattere della stringa
+		switch (entry.charAt(0)) {
+			case '#':
+				return entry.contains("\\") ? "Specific Tag Equivalence Filter" : "Generic Tag Equivalence Filter";
+			case '@':
+				return "Mod Equivalence Filter";
+			case '-':
+				return "Item Filter (Ignore NBT)";
+			case '&':
+				return "Special Global Filter";
+			default:
+				return "Unknown Filter Type, report to the developer please.";
+		}
+	}
+
+	// Metodo per ottenere il testo della barra principale
+	public String getMainBarText() {
+		return this.mainBarText;
+	}
+
+	// Metodo per impostare il testo della barra principale
+	public void setMainBarText(String text) {
+		this.mainBarText = text;
+	}
+
+	// Metodo per ottenere il testo della barra della slot
+	public String getSlotBarText() {
+		return this.slotBarText;
+	}
+
+	// Metodo per impostare il testo della barra della slot
+	public void setSlotBarText(String text) {
+		this.slotBarText = text;
+	}
+
+	public void applyMainBarText(Player player) {
+		// Ottieni il testo della barra principale
+		String text = this.mainBarText;
+		if (text.isEmpty()) {
+			// Se la barra è vuota, usa l'entry selezionata
+			text = this.getEntry(this.selectedEntry);
+		}
+
+		// Controlla la mano principale
+		ItemStack mainHandItem = player.getMainHandItem();
+		if (mainHandItem.getItem().toString().equals("moderndynamics:entry_filter_definition")) {
+			// Rinomina l'oggetto nella mano principale
+			return;
+		}
+
+
+
+
+
+		// Controlla la mano secondaria
+		ItemStack offHandItem = player.getOffhandItem();
+		if (offHandItem.getItem().toString().equals("moderndynamics:entry_filter_definition")) {
+			// Rinomina l'oggetto nella mano secondaria
+		}
+	}
 }
+
+

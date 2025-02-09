@@ -235,18 +235,15 @@ public class AttachedIoMenu<A extends AttachedIo> extends AbstractContainerMenu 
     }
 
     public void setScrollOffset(int offset) {
-        this.scrollOffset = Mth.clamp(offset, 0, getMaxScroll());
+        int newOffset = Mth.clamp(offset, 0, getMaxScroll());
+        if (newOffset != scrollOffset) {
+            scrollOffset = newOffset;
+            // Aggiungi qui eventuali chiamate per aggiornare l'interfaccia utente
+        }
     }
 
     public int getMaxScroll() {
         return Math.max(0, Constants.Upgrades.MAX_FILTER - SLOTS_PER_PAGE);
     }
 
-    public void scrollUp() {
-        setScrollOffset(scrollOffset - 1);
-    }
-
-    public void scrollDown() {
-        setScrollOffset(scrollOffset + 1);
-    }
 }
