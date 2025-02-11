@@ -32,6 +32,7 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.List;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.core.component.DataComponents;
 
 public class EntryFilterMenu extends AbstractContainerMenu {
 	public final static HashMap<String, Object> guistate = new HashMap<>();
@@ -275,35 +276,49 @@ public class EntryFilterMenu extends AbstractContainerMenu {
 		return this.slotBarText;
 	}
 
-	// Metodo per impostare il testo della barra della slot
 	public void setSlotBarText(String text) {
 		this.slotBarText = text;
 	}
 
-	public void applyMainBarText(Player player) {
-		// Ottieni il testo della barra principale
+	public boolean isNum(String num)
+	{
+		try {
+			Integer.parseInt(num);
+			return true;
+		} catch (NumberFormatException e) {
+			return false;
+		}
+	}
+
+	// Metodo per impostare il testo della barra della slot
+	public void apply() {
 		String text = this.mainBarText;
-		if (text.isEmpty()) {
-			// Se la barra è vuota, usa l'entry selezionata
+		String num = this.slotBarText;
+		if (text.isEmpty() && this.selectedEntry != -1) {
+			// Se la barra è vuota e c'è un'entry selezionata, usa l'entry
 			text = this.getEntry(this.selectedEntry);
+			if(!num.isEmpty() && isNum(num) && !text.contains("&"))
+			{text = text.concat(";".concat(num));}
 		}
 
-		// Controlla la mano principale
-		ItemStack mainHandItem = player.getMainHandItem();
-		if (mainHandItem.getItem().toString().equals("moderndynamics:entry_filter_definition")) {
-			// Rinomina l'oggetto nella mano principale
+		// Se il testo è ancora vuoto, non fare nulla
+		if (text.isEmpty()) {
 			return;
 		}
 
 
-
-
-
-		// Controlla la mano secondaria
-		ItemStack offHandItem = player.getOffhandItem();
-		if (offHandItem.getItem().toString().equals("moderndynamics:entry_filter_definition")) {
-			// Rinomina l'oggetto nella mano secondaria
+		// Controlla la mano principale
+		ItemStack mainHandItem = entity.getMainHandItem();
+		ItemStack offHandItem = entity.getOffhandItem();
+		if (mainHandItem.getItem().toString().equals("moderndynamics:entry_filter_definition")) {
+			mainHandItem.set(DataComponents.CUSTOM_NAME, Component.literal(text));
+			return;
 		}
+		else if (offHandItem.getItem().toString().equals("moderndynamics:entry_filter_definition")) {
+			offHandItem.set(DataComponents.CUSTOM_NAME, Component.literal(text));
+			return;
+		}
+		return;
 	}
 }
 

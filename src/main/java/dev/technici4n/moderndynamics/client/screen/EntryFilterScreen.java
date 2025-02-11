@@ -67,6 +67,7 @@ public class EntryFilterScreen extends AbstractContainerScreen<EntryFilterMenu> 
 	protected boolean isScrolling = false;
 
 	private EditBox textBox;
+	private EditBox slotTextBox;
 
 	private static final ResourceLocation BUTTONS_TEXTURE = ResourceLocation.parse("moderndynamics:textures/gui/buttons.png");
 
@@ -144,6 +145,13 @@ public class EntryFilterScreen extends AbstractContainerScreen<EntryFilterMenu> 
 		this.textBox.setMaxLength(100);
 		this.addRenderableWidget(this.textBox);
 
+		// Add the second text box (slotTextBox)
+		int slotTextBoxWidth = 38; // Extended length (18 + 20 = 38)
+		int slotTextBoxX = this.leftPos + 7; // Keep X position at 7
+		int slotTextBoxY = this.topPos + 80; // Y position moved up by 1 pixel (81 -> 80)
+		this.slotTextBox = new EditBox(this.font, slotTextBoxX, slotTextBoxY, slotTextBoxWidth, 10, Component.empty());
+		this.slotTextBox.setMaxLength(10); // Adjust max length if needed
+		this.addRenderableWidget(this.slotTextBox);
 
 		// Add a checkmark button 3 pixels to the right of the text box
 		int checkmarkX = textBoxX + textBoxWidth + 2; // Spostato di 10 pixel a destra
@@ -170,13 +178,6 @@ public class EntryFilterScreen extends AbstractContainerScreen<EntryFilterMenu> 
 			}
 		});
 
-		// Add a second text box near the autonomous slot
-		int slotTextBoxWidth = 38; // Extended length (18 + 20 = 38)
-		int slotTextBoxX = this.leftPos + 7; // Keep X position at 7
-		int slotTextBoxY = this.topPos + 80; // Y position moved up by 1 pixel (81 -> 80)
-		EditBox slotTextBox = new EditBox(this.font, slotTextBoxX, slotTextBoxY, slotTextBoxWidth, 10, Component.empty());
-		slotTextBox.setMaxLength(10); // Adjust max length if needed
-		this.addRenderableWidget(slotTextBox);
 	}
 
 	@Override
@@ -277,37 +278,8 @@ public class EntryFilterScreen extends AbstractContainerScreen<EntryFilterMenu> 
 	}
 
 	private void renderButtons(GuiGraphics guiGraphics, double mouseX, double mouseY) {
-		// Check if the mouse is over the buttons
-		boolean isMouseOverLeftButton = isInLeftButton(mouseX, mouseY);
-		boolean isMouseOverRightButton = isInRightButton(mouseX, mouseY);
-
-		// Render left button (freccia <- spenta/illuminata)
-		int leftButtonX = this.leftPos + 18 - 10 - 1; // 2 pixel a sinistra della slot, spostato di 1 pixel a sinistra
-		int leftButtonY = this.topPos + 61 + 18 - 9; // Allineato con il basso della slot, spostato di 1 pixel in alto (71 -> 70)
-		guiGraphics.blit(BUTTONS_TEXTURE,
-				leftButtonX, leftButtonY,
-				LEFT_ARROW_UV_X, isMouseOverLeftButton ? LEFT_ARROW_HIGHLIGHTED_UV_Y : LEFT_ARROW_UV_Y,
-				8, 8, 64, 64);
-
-		// Render right button (freccia -> spenta/illuminata)
-		int rightButtonX = this.leftPos + 18 + 18 + 2 - 1; // 2 pixel a destra della slot, spostato di 1 pixel a sinistra
-		int rightButtonY = this.topPos + 61 + 18 - 9; // Allineato con il basso della slot, spostato di 1 pixel in alto (71 -> 70)
-		guiGraphics.blit(BUTTONS_TEXTURE,
-				rightButtonX, rightButtonY,
-				RIGHT_ARROW_UV_X, isMouseOverRightButton ? RIGHT_ARROW_HIGHLIGHTED_UV_Y : RIGHT_ARROW_UV_Y,
-				8, 8, 64, 64);
-	}
-
-	private boolean isInLeftButton(double mouseX, double mouseY) {
-		int leftButtonX = this.leftPos + 18 - 10 - 1; // 2 pixel a sinistra della slot, spostato di 1 pixel a sinistra
-		int leftButtonY = this.topPos + 61 + 18 - 9; // Allineato con il basso della slot, spostato di 1 pixel in alto (71 -> 70)
-		return mouseX >= leftButtonX && mouseY >= leftButtonY && mouseX < leftButtonX + 8 && mouseY < leftButtonY + 8;
-	}
-
-	private boolean isInRightButton(double mouseX, double mouseY) {
-		int rightButtonX = this.leftPos + 18 + 18 + 2 - 1; // 2 pixel a destra della slot, spostato di 1 pixel a sinistra
-		int rightButtonY = this.topPos + 61 + 18 - 9; // Allineato con il basso della slot, spostato di 1 pixel in alto (71 -> 70)
-		return mouseX >= rightButtonX && mouseY >= rightButtonY && mouseX < rightButtonX + 8 && mouseY < rightButtonY + 8;
+		// Rimuovi completamente il rendering delle frecce a destra e sinistra
+		// Questo metodo ora è vuoto o può essere rimosso se non serve più
 	}
 
 	@Override
@@ -333,8 +305,11 @@ public class EntryFilterScreen extends AbstractContainerScreen<EntryFilterMenu> 
 		int checkmarkX = this.textBox.getX() + this.textBox.getWidth() + 2;
 		int checkmarkY = this.textBox.getY() + 1;
 		if (mouseX >= checkmarkX && mouseY >= checkmarkY && mouseX < checkmarkX + 8 && mouseY < checkmarkY + 8) {
-			// Applica il testo della barra principale
-			this.menu.applyMainBarText(this.minecraft.player);
+			// Imposta il testo della mainBar con il valore della textBox
+			this.menu.setMainBarText(this.textBox.getValue());
+			this.menu.setSlotBarText(this.slotTextBox.getValue());
+			// Applica il testo
+			this.menu.apply();
 			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 			return true;
 		}
@@ -373,12 +348,6 @@ public class EntryFilterScreen extends AbstractContainerScreen<EntryFilterMenu> 
 			float scrollPercent = Mth.clamp((float) (mouseY - (this.topPos + SCROLLBAR_Y)) / SCROLLBAR_HEIGHT, 0, 1);
 			int newScrollOffset = (int) (scrollPercent * MAX_SCROLL);
 			this.menu.setScrollOffset(newScrollOffset);
-			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-			return true;
-		} else if (isInLeftButton(mouseX, mouseY)) {
-			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-			return true;
-		} else if (isInRightButton(mouseX, mouseY)) {
 			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 			return true;
 		}
